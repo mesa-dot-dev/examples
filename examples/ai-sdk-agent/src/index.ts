@@ -65,14 +65,7 @@ const bashTool = tool({
   ].join("\n"),
   inputSchema: bashInputSchema,
   outputSchema: bashOutputSchema,
-  execute: async ({ command }) => {
-    const result = await bash.exec(command);
-    return {
-      stdout: result.stdout,
-      stderr: result.stderr,
-      exitCode: result.exitCode,
-    };
-  },
+  execute: ({ command }) => bash.exec(command),
 });
 
 console.log(`Connected. You can now chat with the agent about ${org}/${repo}.`);
@@ -88,7 +81,7 @@ const rl = readline.createInterface({
 });
 
 rl.on("close", () => {
-  console.log("\nBye!");
+  console.log("\nDisconnected.");
   process.exit(0);
 });
 
@@ -102,15 +95,18 @@ function truncate(text: string, maxLines = 10): string {
   );
 }
 
-function prompt(): void {
-  rl.question("> ", async (input) => {
-    const trimmed = input.trim();
-    if (!trimmed) return prompt();
+/** `question()` prints the prompt; `for await … of rl` does not — print `"> "` before each read. */
+async function repl(): Promise<void> {
+  process.stdout.write("> ");
+  for await (const line of rl) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      process.stdout.write("> ");
+      continue;
+    }
 
     if (trimmed === "exit") {
-      console.log("Bye!");
       rl.close();
-      process.exit(0);
     }
 
     history.push({ role: "user", content: trimmed });
@@ -174,8 +170,8 @@ function prompt(): void {
     const response = await result.response;
     history.push(...response.messages);
 
-    prompt();
-  });
+    process.stdout.write("> ");
+  }
 }
 
-prompt();
+void repl();

@@ -18,6 +18,7 @@ import { Agent } from "@mastra/core/agent";
 import { createTool } from "@mastra/core/tools";
 import { Mesa } from "@mesadev/sdk";
 import { z } from "zod";
+import { type ModelMessage, stepCountIs } from "ai";
 
 // --- ANSI helpers (zero deps) ---
 
@@ -47,6 +48,16 @@ const bash = mesaFs.bash({ cwd: `/${org}/${repo}` });
 
 // --- Tool ---
 
+const bashInputSchema = z.object({
+  command: z.string().describe("The bash command to execute"),
+});
+
+const bashOutputSchema = z.object({
+  stdout: z.string(),
+  stderr: z.string(),
+  exitCode: z.number(),
+});
+
 const bashTool = createTool({
   id: "bash",
   description: [
@@ -54,22 +65,9 @@ const bashTool = createTool({
     `You have bash access to the "${repo}" repository owned by "${org}".`,
     "Use standard unix commands (ls, cat, grep, find, head, etc.) to explore.",
   ].join("\n"),
-  inputSchema: z.object({
-    command: z.string().describe("The bash command to execute"),
-  }),
-  outputSchema: z.object({
-    stdout: z.string(),
-    stderr: z.string(),
-    exitCode: z.number(),
-  }),
-  execute: async ({ command }) => {
-    const result = await bash.exec(command);
-    return {
-      stdout: result.stdout,
-      stderr: result.stderr,
-      exitCode: result.exitCode,
-    };
-  },
+  inputSchema: bashInputSchema,
+  outputSchema: bashOutputSchema,
+  execute: ({ command }) => bash.exec(command),
 });
 
 // --- Agent ---
@@ -90,7 +88,7 @@ console.log('Type "exit" or Ctrl+C to quit.\n');
 
 // --- REPL ---
 
-const history: Array<{ role: "user"; content: string } | { role: "assistant"; content: string }> = [];
+const messages: ModelMessage[] = [];
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -98,7 +96,7 @@ const rl = readline.createInterface({
 });
 
 rl.on("close", () => {
-  console.log("\nBye!");
+  console.log("\nDisconnected.");
   process.exit(0);
 });
 
@@ -117,56 +115,68 @@ function prompt(): void {
     const trimmed = input.trim();
     if (!trimmed) return prompt();
     if (trimmed === "exit") {
-      console.log("Bye!");
       rl.close();
-      process.exit(0);
     }
 
-    history.push({ role: "user", content: trimmed });
+    messages.push({ role: "user", content: trimmed });
 
-    const stream = await agent.stream(history, {
-      maxSteps: 50,
-      onStepFinish: (step: any) => {
-        // Render tool calls from each step
-        // Mastra wraps tool calls/results: { type, payload: { args, result, ... } }
-        if (step.toolCalls?.length) {
-          console.log(); // blank line before tool calls
-          for (const tc of step.toolCalls) {
-            const args = tc.payload?.args ?? tc.args ?? {};
-            const command = (args as { command?: string }).command ?? "";
-            if (command) {
-              console.log(`${blue("[bash]")} ${command.trim()}`);
-            }
-          }
-        }
-        if (step.toolResults) {
-          for (const tr of step.toolResults) {
-            const result = tr.payload?.result ?? tr.result ?? {};
-            const { stdout, stderr, exitCode } = result as {
-              stdout: string;
-              stderr: string;
-              exitCode: number;
-            };
-            const text = stdout || stderr;
-            if (text) console.log(dim(truncate(text)));
-            console.log(
-              dim(`[exit ${exitCode}]`) +
-              (exitCode !== 0 ? " " + red("(non-zero)") : "")
-            );
-          }
-        }
-      },
+    const stream = await agent.stream(messages, {
+      stopWhen: stepCountIs(50),
     });
 
     // Stream text output
-    for await (const chunk of stream.textStream) {
-      process.stdout.write(chunk);
+    for await (const chunk of stream.fullStream) {
+      switch (chunk.type) {
+        // --- Reasoning / thinking ---
+        case "reasoning-start":
+          console.log(dim("--- thinking ---"));
+          break;
+        case "reasoning-delta":
+          process.stdout.write(dim(chunk.payload.text));
+          break;
+        case "reasoning-end":
+          console.log(`\n${dim("--- /thinking ---")}\n`);
+          break;
+
+        // --- Text output ---
+        case "text-delta":
+          process.stdout.write(chunk.payload.text);
+          break;
+        case "text-end":
+          console.log("\n");
+          break;
+
+        // --- Tool use ---
+        case "tool-call": {
+          if (chunk.payload.toolName !== "bash") throw new Error(`Unexpected tool name: ${chunk.payload.toolName}`);
+          const { command } = bashInputSchema.parse(chunk.payload.args);
+          console.log(`${blue("[bash]")} ${command.trim()}`);
+          break;
+        }
+
+        case "tool-result": {
+          if (chunk.payload.toolName !== "bash") throw new Error(`Unexpected tool name: ${chunk.payload.toolName}`);
+          const { stdout, stderr, exitCode } = bashOutputSchema.parse(chunk.payload.result);
+          const text = stdout || stderr;
+          if (text) console.log(dim(truncate(text)));
+          if (exitCode !== 0) console.log(red(`[exit ${exitCode}] (non-zero)`));
+          break;
+        }
+
+        // --- Errors ---
+        case "error":
+          console.error(red(`[error] ${chunk.payload.error}`));
+          break;
+
+        default:
+          break;
+      }
     }
     console.log();
 
     // Save assistant response to history
-    const response = await stream.text;
-    history.push({ role: "assistant", content: response });
+    const response = await stream.response;
+    messages.push(...response.messages ?? []);
 
     prompt();
   });
