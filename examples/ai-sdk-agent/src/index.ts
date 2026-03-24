@@ -47,26 +47,33 @@ const bash = mesaFs.bash({ cwd: `/${org}/${repo}` });
 
 // --- Tool ---
 
-const tools = {
-  bash: tool({
-    description: [
-      "Execute a bash command against the repository filesystem.",
-      `You have bash access to the "${repo}" repository owned by "${org}".`,
-      "Use standard unix commands (ls, cat, grep, find, head, etc.) to explore.",
-    ].join("\n"),
-    inputSchema: z.object({
-      command: z.string().describe("The bash command to execute"),
-    }),
-    execute: async ({ command }) => {
-      const result = await bash.exec(command);
-      return {
-        stdout: result.stdout,
-        stderr: result.stderr,
-        exitCode: result.exitCode,
-      };
-    },
-  }),
-};
+const bashInputSchema = z.object({
+  command: z.string().describe("The bash command to execute"),
+});
+
+const bashOutputSchema = z.object({
+  stdout: z.string(),
+  stderr: z.string(),
+  exitCode: z.number(),
+});
+
+const bashTool = tool({
+  description: [
+    "Execute a bash command against the repository filesystem.",
+    `You have bash access to the "${repo}" repository owned by "${org}".`,
+    "Use standard unix commands (ls, cat, grep, find, head, etc.) to explore.",
+  ].join("\n"),
+  inputSchema: bashInputSchema,
+  outputSchema: bashOutputSchema,
+  execute: async ({ command }) => {
+    const result = await bash.exec(command);
+    return {
+      stdout: result.stdout,
+      stderr: result.stderr,
+      exitCode: result.exitCode,
+    };
+  },
+});
 
 console.log(`Connected. You can now chat with the agent about ${org}/${repo}.`);
 console.log('Type "exit" or Ctrl+C to quit.\n');
@@ -110,7 +117,7 @@ function prompt(): void {
     try {
       const result = streamText({
         model: anthropic("claude-sonnet-4-20250514"),
-        tools,
+        tools: { bash: bashTool },
         stopWhen: stepCountIs(50),
         messages: history,
       });
@@ -148,23 +155,23 @@ function prompt(): void {
           case "tool-call": {
             if (lastType === "text") console.log();
             lastType = "tool";
-            const { command } = chunk.input as { command: string };
-            console.log(`${blue("[bash]")} ${command.trim()}`);
+            if (chunk.toolName === "bash") {
+              const { command } = bashInputSchema.parse(chunk.input);
+              console.log(`${blue("[bash]")} ${command.trim()}`);
+            }
             break;
           }
 
           case "tool-result": {
-            const { stdout, stderr, exitCode } = chunk.output as {
-              stdout: string;
-              stderr: string;
-              exitCode: number;
-            };
-            const text = stdout || stderr;
-            if (text) console.log(dim(truncate(text)));
-            console.log(
-              dim(`[exit ${exitCode}]`) +
-                (exitCode !== 0 ? " " + red("(non-zero)") : "")
-            );
+            if (chunk.toolName === "bash") {
+              const { stdout, stderr, exitCode } = bashOutputSchema.parse(chunk.output);
+              const text = stdout || stderr;
+              if (text) console.log(dim(truncate(text)));
+              console.log(
+                dim(`[exit ${exitCode}]`) +
+                  (exitCode !== 0 ? " " + red("(non-zero)") : "")
+              );
+            }
             break;
           }
 

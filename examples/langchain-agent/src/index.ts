@@ -16,14 +16,10 @@
 import * as readline from "node:readline";
 import { createAgent, tool } from "langchain";
 import { ChatAnthropic } from "@langchain/anthropic";
+import { AIMessageChunk } from "@langchain/core/messages";
+import type { BaseMessage } from "@langchain/core/messages";
 import { Mesa } from "@mesadev/sdk";
 import { z } from "zod";
-import {
-  AIMessage,
-  ToolMessage,
-  HumanMessage,
-  type BaseMessage,
-} from "@langchain/core/messages";
 
 // --- ANSI helpers (zero deps) ---
 
@@ -53,14 +49,15 @@ const bash = mesaFs.bash({ cwd: `/${org}/${repo}` });
 
 // --- Tool ---
 
+const bashInputSchema = z.object({
+  command: z.string().describe("The bash command to execute"),
+});
+
 const bashTool = tool(
   async ({ command }: { command: string }) => {
     const result = await bash.exec(command);
-    return JSON.stringify({
-      stdout: result.stdout,
-      stderr: result.stderr,
-      exitCode: result.exitCode,
-    });
+    const output = result.stdout || result.stderr;
+    return [output, `[exit ${result.exitCode}]`].filter(Boolean).join("\n");
   },
   {
     name: "bash",
@@ -69,20 +66,14 @@ const bashTool = tool(
       `You have bash access to the "${repo}" repository owned by "${org}".`,
       "Use standard unix commands (ls, cat, grep, find, head, etc.) to explore.",
     ].join("\n"),
-    schema: z.object({
-      command: z.string().describe("The bash command to execute"),
-    }),
+    schema: bashInputSchema,
   }
 );
 
 // --- Agent ---
 
-const model = new ChatAnthropic({
-  model: "claude-sonnet-4-20250514",
-});
-
 const agent = createAgent({
-  model,
+  model: new ChatAnthropic({ model: "claude-sonnet-4-20250514" }),
   tools: [bashTool],
 });
 
@@ -91,7 +82,7 @@ console.log('Type "exit" or Ctrl+C to quit.\n');
 
 // --- REPL ---
 
-const history: BaseMessage[] = [];
+let history: BaseMessage[] = [];
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -113,18 +104,6 @@ function truncate(text: string, maxLines = 10): string {
   );
 }
 
-/** Extract text from an AIMessage content (string or content block array). */
-function extractText(content: AIMessage["content"]): string {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .filter((b): b is { type: "text"; text: string } => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-  }
-  return "";
-}
-
 function prompt(): void {
   rl.question("> ", async (input) => {
     const trimmed = input.trim();
@@ -135,73 +114,88 @@ function prompt(): void {
       process.exit(0);
     }
 
-    history.push(new HumanMessage(trimmed));
+    history.push({ role: "user", content: trimmed } as any);
 
     try {
-      // Use "values" mode: each chunk is the full state after a step.
-      // This lets us diff messages to see what's new after each step.
+      // Multi-mode streaming:
+      // - "messages": token-level AIMessageChunks (text deltas, reasoning blocks)
+      // - "updates":  complete messages per step (tool calls, tool results, history)
       const stream = await agent.stream(
         { messages: history },
-        { streamMode: "values" }
+        { streamMode: ["messages", "updates"] }
       );
 
-      let prevMessageCount = history.length;
-      let lastAssistantText = "";
-      let allMessages: BaseMessage[] = [];
+      // Track state for rendering newlines between sections
+      let lastType = "";
 
-      for await (const chunk of stream) {
-        const messages: BaseMessage[] = chunk.messages ?? [];
-        allMessages = messages;
+      for await (const [mode, data] of stream) {
+        // --- Token-level streaming (text + reasoning) ---
+        if (mode === "messages") {
+          const [chunk] = data as [AIMessageChunk, any];
+          if (!AIMessageChunk.isInstance(chunk)) continue;
 
-        // Process only new messages since last chunk
-        const newMessages = messages.slice(prevMessageCount);
-        prevMessageCount = messages.length;
+          for (const block of chunk.contentBlocks) {
+            switch (block.type) {
+              case "reasoning":
+                if (lastType !== "reasoning") {
+                  console.log(dim("--- thinking ---"));
+                  lastType = "reasoning";
+                }
+                if (block.reasoning) {
+                  process.stdout.write(dim(block.reasoning));
+                }
+                break;
 
-        for (const msg of newMessages) {
-          if (msg instanceof AIMessage) {
-            // Tool calls
-            const toolCalls = msg.tool_calls ?? [];
-            if (toolCalls.length) console.log(); // blank line before tool calls
-            for (const tc of toolCalls) {
-              const command = (tc.args as any)?.command ?? "";
-              if (command) {
+              case "text":
+                if (lastType === "reasoning") {
+                  console.log("\n" + dim("--- /thinking ---"));
+                }
+                if (lastType && lastType !== "text") console.log();
+                lastType = "text";
+                if (block.text) {
+                  process.stdout.write(block.text);
+                }
+                break;
+            }
+          }
+        }
+
+        // --- Step-level updates (tool calls, tool results, history) ---
+        if (mode === "updates") {
+          const update = data as Record<string, any>;
+          const [, content] = Object.entries(update)[0];
+          const messages: BaseMessage[] = content?.messages ?? [];
+
+          for (const msg of messages) {
+            history.push(msg); // accumulate for multi-turn
+
+            if (AIMessageChunk.isInstance(msg)) {
+              // Render tool calls from the completed model response
+              const toolCalls = msg.tool_calls ?? [];
+              if (!toolCalls.length) continue;
+              if (lastType === "text" || lastType === "reasoning") {
+                console.log();
+              }
+              console.log(); // blank line before tool calls
+              lastType = "tool";
+              for (const tc of toolCalls) {
+                const { command } = bashInputSchema.parse(tc.args);
                 console.log(`${blue("[bash]")} ${command.trim()}`);
               }
-            }
-
-            // Text content (final response)
-            if (!toolCalls.length) {
-              const text = extractText(msg.content);
-              if (text) {
-                process.stdout.write(text);
-                lastAssistantText = text;
-              }
-            }
-          } else if (msg instanceof ToolMessage) {
-            const raw =
-              typeof msg.content === "string" ? msg.content : "";
-            try {
-              const parsed = JSON.parse(raw);
-              const { stdout, stderr, exitCode } = parsed;
-              const text = stdout || stderr;
-              if (text) console.log(dim(truncate(text)));
-              console.log(
-                dim(`[exit ${exitCode}]`) +
-                  (exitCode !== 0 ? " " + red("(non-zero)") : "")
-              );
-            } catch {
+            } else {
+              // Tool result — print the content directly
+              const raw =
+                typeof msg.content === "string" ? msg.content : "";
               if (raw) console.log(dim(truncate(raw)));
             }
           }
         }
       }
 
-      if (lastAssistantText) console.log();
-
-      // Replace history with the full conversation from the agent run
-      history.length = 0;
-      for (const msg of allMessages) {
-        history.push(msg);
+      // Final newline after text output
+      if (lastType === "text") console.log();
+      if (lastType === "reasoning") {
+        console.log("\n" + dim("--- /thinking ---"));
       }
     } catch (err) {
       console.error(
