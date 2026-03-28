@@ -1,8 +1,6 @@
-# mesa-just-bash-example
+# Mesa Examples
 
-Example projects showing how to use [Mesa's](https://mesa.dev) cloud filesystem with [just-bash](https://github.com/vercel-labs/just-bash).
-
-The [`@mesadev/sdk`](https://www.npmjs.com/package/@mesadev/sdk) provides a `MesaFileSystem` that implements the just-bash `IFileSystem` interface, backed by Mesa's native Rust addon. You get `ls`, `cat`, `grep`, `find`, and every other bash command — against files in a Mesa repo, no cloning, no local disk.
+Example projects showing how to use [Mesa](https://mesa.dev). Each subdirectory is a self-contained project you can run independently.
 
 ## Setup
 
@@ -19,14 +17,16 @@ ANTHROPIC_API_KEY=your_anthropic_api_key
 
 Each example's start script uses `tsx --env-file=../../.env` to load it automatically — no `dotenv` package needed.
 
-## Examples
+## just-bash
 
-### `shell` — Interactive bash over a Mesa repo
+These examples use Mesa's cloud filesystem with [just-bash](https://github.com/vercel-labs/just-bash). The [`@mesadev/sdk`](https://www.npmjs.com/package/@mesadev/sdk) provides a `MesaFileSystem` that implements the just-bash `IFileSystem` interface, backed by Mesa's native Rust addon. You get `ls`, `cat`, `grep`, `find`, and every other bash command — against files in a Mesa repo, no cloning, no local disk.
+
+### `just-bash-shell` — Interactive bash over a Mesa repo
 
 The simplest possible example. Connects to a Mesa repo and gives you a `$` prompt. You type bash commands, you see output. No AI, no agent — just bash.
 
 ```bash
-cd examples/shell
+cd examples/just-bash-shell
 npm start -- <org> <repo>
 ```
 
@@ -40,12 +40,12 @@ $ exit
 
 ~85 lines of TypeScript. Dependencies: `@mesadev/sdk`.
 
-### `ai-sdk-agent` — AI agent with bash access (Vercel AI SDK)
+### `just-bash-ai-sdk` — AI agent with bash access (Vercel AI SDK)
 
 An AI agent (Claude) that can run bash commands to explore and answer questions about a Mesa repo. Uses the [Vercel AI SDK](https://sdk.vercel.ai)'s `streamText` and `fullStream` to render reasoning, tool calls, and text as the agent works.
 
 ```bash
-cd examples/ai-sdk-agent
+cd examples/just-bash-ai-sdk
 npm start -- <org> <repo>
 ```
 
@@ -63,23 +63,23 @@ This project is written in TypeScript.
 
 ~200 lines of TypeScript. Dependencies: `@mesadev/sdk`, `ai`, `@ai-sdk/anthropic`, `zod`.
 
-### `mastra-agent` — AI agent with bash access (Mastra)
+### `just-bash-mastra` — AI agent with bash access (Mastra)
 
 The same AI agent implemented using [Mastra](https://mastra.ai). Uses Mastra's `Agent` class with `createTool` and the built-in model router for Anthropic.
 
 ```bash
-cd examples/mastra-agent
+cd examples/just-bash-mastra
 npm start -- <org> <repo>
 ```
 
 ~180 lines of TypeScript. Dependencies: `@mesadev/sdk`, `@mastra/core`, `zod`.
 
-### `langchain-agent` — AI agent with bash access (LangChain)
+### `just-bash-langchain` — AI agent with bash access (LangChain)
 
 The same AI agent implemented using [LangChain](https://js.langchain.com). Uses LangChain's `createAgent` with `tool` and streams updates via the LangGraph runtime.
 
 ```bash
-cd examples/langchain-agent
+cd examples/just-bash-langchain
 npm start -- <org> <repo>
 ```
 
@@ -104,18 +104,18 @@ The agent examples add one more layer:
 ├── package.json                  # npm workspaces root
 ├── tsconfig.json                 # shared base TS config
 ├── examples/
-│   ├── shell/                    # bare bash REPL
+│   ├── just-bash-shell/          # bare bash REPL
 │   │   ├── package.json
-│   │   └── src/index.ts
-│   ├── ai-sdk-agent/             # AI agent — Vercel AI SDK
+│   │   └── index.ts
+│   ├── just-bash-ai-sdk/         # AI agent — Vercel AI SDK
 │   │   ├── package.json
-│   │   └── src/index.ts
-│   ├── mastra-agent/             # AI agent — Mastra
+│   │   └── index.ts
+│   ├── just-bash-mastra/         # AI agent — Mastra
 │   │   ├── package.json
-│   │   └── src/index.ts
-│   └── langchain-agent/          # AI agent — LangChain
+│   │   └── index.ts
+│   └── just-bash-langchain/      # AI agent — LangChain
 │       ├── package.json
-│       └── src/index.ts
+│       └── index.ts
 ```
 
 ## Requirements

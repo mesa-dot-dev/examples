@@ -1,10 +1,10 @@
 {
-  "name": "mesa-ai-sdk-agent-example",
+  "name": "just-bash-ai-sdk",
   "version": "0.1.0",
   "description": "AI agent (Vercel AI SDK) with bash access to Mesa's cloud filesystem",
   "type": "module",
   "scripts": {
-    "start": "tsx --env-file=../../.env src/index.ts"
+    "start": "tsx --env-file=../../.env index.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.0",
