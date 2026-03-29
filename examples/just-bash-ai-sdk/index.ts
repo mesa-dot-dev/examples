@@ -38,8 +38,8 @@ console.log(`Connecting to ${org}/${repo} via Mesa...`);
 
 const mesa = new Mesa({ org });
 
-const mesaFs = await mesa.fs.create({
-  repos: [{ name: repo, desiredBookmark: "main" }],
+const mesaFs = await mesa.fs.mount({
+  repos: [{ name: repo, bookmark: "main" }],
   mode: "rw",
 });
 
