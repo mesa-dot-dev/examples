@@ -7,8 +7,7 @@
     "start": "tsx --env-file=../../.env index.ts"
   },
   "dependencies": {
-    "@mesadev/mesafs-napi-darwin-arm64": "^0.3.1",
-    "@mesadev/sdk": "^0.6.1"
+    "@mesadev/sdk": "^0.13.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

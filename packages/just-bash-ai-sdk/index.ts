@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Mesa + just-bash interactive CLI agent (Mastra)
+ * Mesa + just-bash interactive CLI agent
  *
  * Connects to a Mesa repo via MesaFS, gives an AI agent bash access
  * to explore and work with the repo's files.
@@ -14,11 +14,10 @@
  */
 
 import * as readline from "node:readline";
-import { Agent } from "@mastra/core/agent";
-import { createTool } from "@mastra/core/tools";
+import { anthropic } from "@ai-sdk/anthropic";
 import { Mesa } from "@mesadev/sdk";
+import { streamText, tool, stepCountIs, type ModelMessage } from "ai";
 import { z } from "zod";
-import { type ModelMessage, stepCountIs } from "ai";
 
 // --- ANSI helpers (zero deps) ---
 
@@ -39,8 +38,8 @@ console.log(`Connecting to ${org}/${repo} via Mesa...`);
 
 const mesa = new Mesa({ org });
 
-const mesaFs = await mesa.fs.create({
-  repos: [{ name: repo, desiredBookmark: "main" }],
+const mesaFs = await mesa.fs.mount({
+  repos: [{ name: repo, bookmark: "main" }],
   mode: "rw",
 });
 
@@ -58,8 +57,7 @@ const bashOutputSchema = z.object({
   exitCode: z.number(),
 });
 
-const bashTool = createTool({
-  id: "bash",
+const bashTool = tool({
   description: [
     "Execute a bash command against the repository filesystem.",
     `You have bash access to the "${repo}" repository owned by "${org}".`,
@@ -70,25 +68,12 @@ const bashTool = createTool({
   execute: ({ command }) => bash.exec(command),
 });
 
-// --- Agent ---
-
-const agent = new Agent({
-  id: "mesa-bash-agent",
-  name: "Mesa Bash Agent",
-  instructions: [
-    `You have bash access to the "${repo}" repository owned by "${org}".`,
-    "Use the bash tool to explore and answer questions about the repo.",
-  ].join("\n"),
-  model: "anthropic/claude-sonnet-4-20250514",
-  tools: { bash: bashTool },
-});
-
 console.log(`Connected. You can now chat with the agent about ${org}/${repo}.`);
 console.log('Type "exit" or Ctrl+C to quit.\n');
 
 // --- REPL ---
 
-const messages: ModelMessage[] = [];
+const history: ModelMessage[] = [];
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -110,29 +95,37 @@ function truncate(text: string, maxLines = 10): string {
   );
 }
 
-function prompt(): void {
-  rl.question("> ", async (input) => {
-    const trimmed = input.trim();
-    if (!trimmed) return prompt();
+/** `question()` prints the prompt; `for await … of rl` does not — print `"> "` before each read. */
+async function repl(): Promise<void> {
+  process.stdout.write("> ");
+  for await (const line of rl) {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      process.stdout.write("> ");
+      continue;
+    }
+
     if (trimmed === "exit") {
       rl.close();
     }
 
-    messages.push({ role: "user", content: trimmed });
+    history.push({ role: "user", content: trimmed });
 
-    const stream = await agent.stream(messages, {
+    const result = streamText({
+      model: anthropic("claude-sonnet-4-20250514"),
+      tools: { bash: bashTool },
       stopWhen: stepCountIs(50),
+      messages: history,
     });
 
-    // Stream text output
-    for await (const chunk of stream.fullStream) {
+    for await (const chunk of result.fullStream) {
       switch (chunk.type) {
         // --- Reasoning / thinking ---
         case "reasoning-start":
           console.log(dim("--- thinking ---"));
           break;
         case "reasoning-delta":
-          process.stdout.write(dim(chunk.payload.text));
+          process.stdout.write(dim(chunk.text));
           break;
         case "reasoning-end":
           console.log(`\n${dim("--- /thinking ---")}\n`);
@@ -140,7 +133,7 @@ function prompt(): void {
 
         // --- Text output ---
         case "text-delta":
-          process.stdout.write(chunk.payload.text);
+          process.stdout.write(chunk.text);
           break;
         case "text-end":
           console.log("\n");
@@ -148,15 +141,15 @@ function prompt(): void {
 
         // --- Tool use ---
         case "tool-call": {
-          if (chunk.payload.toolName !== "bash") throw new Error(`Unexpected tool name: ${chunk.payload.toolName}`);
-          const { command } = bashInputSchema.parse(chunk.payload.args);
+          if (chunk.toolName !== "bash") throw new Error(`Unexpected tool name: ${chunk.toolName}`);
+          const { command } = bashInputSchema.parse(chunk.input);
           console.log(`${blue("[bash]")} ${command.trim()}`);
           break;
         }
 
         case "tool-result": {
-          if (chunk.payload.toolName !== "bash") throw new Error(`Unexpected tool name: ${chunk.payload.toolName}`);
-          const { stdout, stderr, exitCode } = bashOutputSchema.parse(chunk.payload.result);
+          if (chunk.toolName !== "bash") throw new Error(`Unexpected tool name: ${chunk.toolName}`);
+          const { stdout, stderr, exitCode } = bashOutputSchema.parse(chunk.output);
           const text = stdout || stderr;
           if (text) console.log(dim(truncate(text)));
           if (exitCode !== 0) console.log(red(`[exit ${exitCode}] (non-zero)`));
@@ -165,21 +158,20 @@ function prompt(): void {
 
         // --- Errors ---
         case "error":
-          console.error(red(`[error] ${chunk.payload.error}`));
+          console.error(red(`[error] ${chunk.error}`));
           break;
 
         default:
           break;
       }
     }
-    console.log();
 
-    // Save assistant response to history
-    const response = await stream.response;
-    messages.push(...response.messages ?? []);
+    // Save response messages into history for multi-turn
+    const response = await result.response;
+    history.push(...response.messages);
 
-    prompt();
-  });
+    process.stdout.write("> ");
+  }
 }
 
-prompt();
+void repl();
