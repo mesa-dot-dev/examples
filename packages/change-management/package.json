@@ -1,9 +1,10 @@
 {
-  "name": "just-bash-shell",
+  "name": "change-management",
   "version": "0.1.0",
-  "description": "Interactive bash shell over a Mesa cloud repo — no AI, just bash",
+  "description": "Creates a Mesa repo with three changes (a, b, c), then lets you pick one to mount and explore via bash",
   "type": "module",
   "scripts": {
+    "setup": "tsx --env-file=../../.env setup.ts",
     "start": "tsx --env-file=../../.env index.ts"
   },
   "dependencies": {
