@@ -9,7 +9,7 @@
  *   npx tsx src/index.ts <org> <repo>
  *
  * Environment:
- *   MESA_ADMIN_API_KEY  — Mesa admin API key
+ *   MESA_API_KEY  — Mesa admin API key
  *   ANTHROPIC_API_KEY   — Anthropic API key
  */
 
