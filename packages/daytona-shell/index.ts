@@ -9,8 +9,8 @@
  *   npx tsx index.ts <org> <repo>
  *
  * Environment:
- *   MESA_API_KEY  — Mesa admin API key
- *   DAYTONA_API_KEY     — Daytona API key
+ *   MESA_API_KEY   — Mesa API key
+ *   DAYTONA_API_KEY — Daytona API key
  */
 
 import * as readline from "node:readline";
@@ -29,72 +29,55 @@ if (!org || !repo) {
 
 // --- Bootstrap ---
 
-console.log(dim("Creating Daytona sandbox with FUSE support..."));
+console.log(dim("Creating Daytona sandbox..."));
 
 const image = Image.base("debian:bookworm-slim").dockerfileCommands([
+  // This installs the necessary packages for the sandbox to work
+  // These deps are already available on most base Docker images,
+  // but slim images don't include them by default
   "RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl fuse3 libssl3 openssl && rm -rf /var/lib/apt/lists/*",
+  // Enable non-root users to access the FUSE mount
   "RUN sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf",
+  // Install Mesa CLI
+  "RUN curl -fsSL https://mesa.dev/install.sh | sh",
 ]);
 
 const daytona = new Daytona();
-const sandbox = await daytona.create(
-  {
-    image,
-    envVars: { TERM: "dumb" },
-  },
-  { onSnapshotCreateLogs: (line) => process.stderr.write(dim(line)) }
-);
+const sandbox = await daytona.create({ image });
 
-console.log(dim("Sandbox created. Installing Mesa CLI..."));
-
-await sandbox.process.executeCommand(
-  "curl -fsSL https://mesa.dev/install.sh | sh"
-);
-
-console.log(dim("Generating ephemeral Mesa API key..."));
-
+// Generate a scoped, short-lived API key for the sandbox
 const mesa = new Mesa({ org });
 const ephemeralKey = await mesa.apiKeys.create({
   name: `daytona-shell-${Date.now()}`,
   scopes: ["read", "write"],
-  expires_in_seconds: 360000, // 100 hours
+  expires_in_seconds: 360000,
 });
 
-console.log(dim(`  Created ephemeral key: ${ephemeralKey.key.slice(0, 12)}...`));
+// Write Mesa config and start the FUSE mount
+const MOUNT_POINT = `/home/daytona/mesa/mnt`;
+const CONFIG_PATH = `/etc/mesa/config.toml`;
 
-const mountPoint = `/home/daytona/mesa/mnt`;
+console.log(dim(`Mounting ${org}/${repo}...`));
+
 const mesaConfig = `
-mount-point = "${mountPoint}"
+  mount-point = "${MOUNT_POINT}"
+  [organizations.${org}]
+  api-key = "${ephemeralKey.key}"
+`;
 
-[organizations.${org}]
-api-key = "${ephemeralKey.key}"
-`.trim();
-
-const configPath = `/etc/mesa/config.toml`;
-
-console.log(dim("Configuring Mesa mount..."));
-
-await sandbox.process.executeCommand(`mkdir -p /etc/mesa ${mountPoint}`);
-await sandbox.process.executeCommand(
-  `cat > ${configPath} << 'MESAEOF'\n${mesaConfig}\nMESAEOF`
-);
-
-console.log(dim("Mounting Mesa FUSE filesystem..."));
-
-await sandbox.process.executeCommand(
-  `mesa -c ${configPath} mount --daemonize`
-);
+await sandbox.process.executeCommand(`mkdir -p /etc/mesa ${MOUNT_POINT}`);
+await sandbox.fs.uploadFile(Buffer.from(mesaConfig), CONFIG_PATH);
+await sandbox.process.executeCommand(`mesa -c ${CONFIG_PATH} mount --daemonize`);
 
 // Wait for the FUSE mount to be ready (daemonize returns before mount is live)
-const cwd = `${mountPoint}/${org}/${repo}`;
+const cwd = `${MOUNT_POINT}/${org}/${repo}`;
 for (let i = 0; i < 30; i++) {
   const check = await sandbox.process.executeCommand(`ls ${cwd} 2>/dev/null`);
   if (check.exitCode === 0) break;
-  await new Promise((r) => setTimeout(r, 500));
+  await new Promise((r) => setTimeout(r, 200));
 }
 
-console.log(`\nConnected to ${org}/${repo} in Daytona sandbox.`);
-console.log('Type "exit" or Ctrl+C to quit.\n');
+console.log(`Connected to ${org}/${repo}. Type "exit" or Ctrl+C to quit.\n`);
 
 // --- REPL ---
 
