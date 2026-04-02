@@ -19,7 +19,6 @@ import { Daytona, Image } from "@daytonaio/sdk";
 
 const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
 const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
-const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
 
 const [org, repo] = process.argv.slice(2);
 
@@ -61,7 +60,7 @@ const ephemeralKey = await mesa.apiKeys.create({
   expires_in_seconds: 360000, // 100 hours
 });
 
-console.log(green(`  Created ephemeral key: ${ephemeralKey.key}`));
+console.log(dim(`  Created ephemeral key: ${ephemeralKey.key.slice(0, 12)}...`));
 
 const mountPoint = `/home/daytona/mesa/mnt`;
 const mesaConfig = `
@@ -71,19 +70,28 @@ mount-point = "${mountPoint}"
 api-key = "${ephemeralKey.key}"
 `.trim();
 
+const configPath = `/etc/mesa/config.toml`;
+
 console.log(dim("Configuring Mesa mount..."));
 
-await sandbox.process.executeCommand(`mkdir -p /home/daytona/.config/mesa`);
+await sandbox.process.executeCommand(`mkdir -p /etc/mesa ${mountPoint}`);
 await sandbox.process.executeCommand(
-  `cat > /home/daytona/.config/mesa/config.toml << 'MESAEOF'\n${mesaConfig}\nMESAEOF`
+  `cat > ${configPath} << 'MESAEOF'\n${mesaConfig}\nMESAEOF`
 );
 
 console.log(dim("Mounting Mesa FUSE filesystem..."));
 
-await sandbox.process.executeCommand("mesa mount --daemonize");
+await sandbox.process.executeCommand(
+  `mesa -c ${configPath} mount --daemonize`
+);
 
+// Wait for the FUSE mount to be ready (daemonize returns before mount is live)
 const cwd = `${mountPoint}/${org}/${repo}`;
-await sandbox.process.executeCommand(`ls ${cwd}`);
+for (let i = 0; i < 30; i++) {
+  const check = await sandbox.process.executeCommand(`ls ${cwd} 2>/dev/null`);
+  if (check.exitCode === 0) break;
+  await new Promise((r) => setTimeout(r, 500));
+}
 
 console.log(`\nConnected to ${org}/${repo} in Daytona sandbox.`);
 console.log('Type "exit" or Ctrl+C to quit.\n');
@@ -114,6 +122,9 @@ function prompt(): void {
       const result = await sandbox.process.executeCommand(trimmed, cwd);
       if (result.result) process.stdout.write(result.result);
       if (!result.result?.endsWith("\n")) process.stdout.write("\n");
+      if (result.exitCode !== 0) {
+        console.error(red(`[exit ${result.exitCode}]`));
+      }
     } catch (err) {
       console.error(
         red("Error:"),
