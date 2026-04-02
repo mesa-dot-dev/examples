@@ -9,7 +9,7 @@
  *   npm run setup -- <org> <repo>
  *
  * Environment:
- *   MESA_ADMIN_API_KEY  — Mesa admin API key
+ *   MESA_API_KEY  — Mesa admin API key
  */
 
 import { Mesa } from "@mesadev/sdk";

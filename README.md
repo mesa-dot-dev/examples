@@ -11,7 +11,7 @@ npm install
 Create a `.env` file at the repo root (see `.env.example`):
 
 ```
-MESA_ADMIN_API_KEY=your_mesa_admin_api_key
+MESA_API_KEY=your_mesa_admin_api_key
 ANTHROPIC_API_KEY=your_anthropic_api_key
 ```
 
