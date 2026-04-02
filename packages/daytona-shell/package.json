@@ -1,13 +1,13 @@
 {
-  "name": "change-management",
+  "name": "daytona-shell",
   "version": "0.1.0",
-  "description": "Creates a Mesa repo with three changes (a, b, c), then lets you pick one to mount and explore via bash",
+  "description": "Interactive shell over a Mesa cloud repo running in a Daytona sandbox",
   "type": "module",
   "scripts": {
-    "setup": "tsx --env-file=../../.env setup.ts",
     "start": "tsx --env-file=../../.env index.ts"
   },
   "dependencies": {
+    "@daytonaio/sdk": "^0.159.0",
     "@mesadev/sdk": "^0.13.4"
   },
   "devDependencies": {

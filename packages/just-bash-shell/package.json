@@ -7,7 +7,7 @@
     "start": "tsx --env-file=../../.env index.ts"
   },
   "dependencies": {
-    "@mesadev/sdk": "^0.13.2"
+    "@mesadev/sdk": "^0.13.4"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
