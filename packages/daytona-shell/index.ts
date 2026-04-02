@@ -9,7 +9,7 @@
  *   npx tsx index.ts <org> <repo>
  *
  * Environment:
- *   MESA_ADMIN_API_KEY  — Mesa admin API key
+ *   MESA_API_KEY  — Mesa admin API key
  *   DAYTONA_API_KEY     — Daytona API key
  */
 
@@ -58,7 +58,7 @@ const mesa = new Mesa({ org });
 const ephemeralKey = await mesa.apiKeys.create({
   name: `daytona-shell-${Date.now()}`,
   scopes: ["read", "write"],
-  expires_in_seconds: 3600,
+  expires_in_seconds: 360000, // 100 hours
 });
 
 console.log(green(`  Created ephemeral key: ${ephemeralKey.key}`));
