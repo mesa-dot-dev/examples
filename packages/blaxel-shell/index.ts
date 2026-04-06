@@ -11,10 +11,11 @@
  * Environment:
  *   MESA_API_KEY  — Mesa API key
  *   BL_API_KEY    — Blaxel API key
- *   BL_WORKSPACE  — Blaxel workspace name
+ *   BL_WORKSPACE  — Blaxel workspace name (read automatically by the Blaxel SDK)
  */
 
 import * as readline from "node:readline";
+import { Mesa } from "@mesadev/sdk";
 import { SandboxInstance } from "@blaxel/core";
 
 const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
@@ -41,12 +42,6 @@ async function run(sandbox: SandboxInstance, command: string) {
 
 // --- Bootstrap ---
 
-const apiKey = process.env.MESA_API_KEY;
-if (!apiKey) {
-  console.error("MESA_API_KEY environment variable is required");
-  process.exit(1);
-}
-
 console.log(dim("Creating Blaxel sandbox..."));
 
 const sandbox = await SandboxInstance.create({
@@ -55,6 +50,7 @@ const sandbox = await SandboxInstance.create({
   region: "us-pdx-1",
 });
 
+// Blaxel runs as root, so /mnt is a natural mount point
 const MOUNT_POINT = "/mnt/mesa";
 const CONFIG_PATH = "/etc/mesa/config.toml";
 const cwd = `${MOUNT_POINT}/${org}/${repo}`;
@@ -64,8 +60,9 @@ try {
 
   // Blaxel's base image is Alpine — the Mesa install script requires apt, so we
   // download the .deb directly and extract the binary.
-  // gcompat is required (not libc6-compat) for the mesa daemon's gRPC connections.
+  // gcompat (not libc6-compat) is required for the mesa daemon's gRPC connections.
   await run(sandbox, "apk add --no-cache curl ca-certificates gcompat dpkg fuse3");
+  // Pin to a specific version; update when upgrading Mesa
   await run(
     sandbox,
     [
@@ -75,13 +72,21 @@ try {
     ].join(" && "),
   );
 
+  // Generate a scoped, short-lived API key for the sandbox
+  const mesa = new Mesa({ org });
+  const ephemeralKey = await mesa.apiKeys.create({
+    name: `blaxel-shell-${Date.now()}`,
+    scopes: ["read", "write"],
+    expires_in_seconds: 360000,
+  });
+
   // Write Mesa config and start the FUSE mount
   console.log(dim(`Mounting ${org}/${repo}...`));
 
   const mesaConfig = [
     `mount-point = "${MOUNT_POINT}"`,
     `[organizations.${org}]`,
-    `api-key = "${apiKey}"`,
+    `api-key = "${ephemeralKey.key}"`,
   ].join("\n");
 
   await run(sandbox, `mkdir -p /etc/mesa ${MOUNT_POINT}`);

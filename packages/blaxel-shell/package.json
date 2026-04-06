@@ -7,7 +7,8 @@
     "start": "tsx --env-file=../../.env index.ts"
   },
   "dependencies": {
-    "@blaxel/core": "^0.2.0"
+    "@blaxel/core": "^0.2.0",
+    "@mesadev/sdk": "^0.15.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
