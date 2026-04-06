@@ -74,10 +74,17 @@ await devbox.cmd.exec(`mesa -c ${CONFIG_PATH} mount --daemonize`);
 
 // Wait for the FUSE mount to be ready (daemonize returns before mount is live)
 const cwd = `${MOUNT_POINT}/${org}/${repo}`;
+let mounted = false;
 for (let i = 0; i < 30; i++) {
   const check = await devbox.cmd.exec(`ls ${cwd} 2>/dev/null`);
-  if (check.exitCode === 0) break;
+  if (check.exitCode === 0) { mounted = true; break; }
   await new Promise((r) => setTimeout(r, 200));
+}
+
+if (!mounted) {
+  console.error(red("Timed out waiting for FUSE mount."));
+  await devbox.shutdown();
+  process.exit(1);
 }
 
 console.log(`Connected to ${org}/${repo}. Type "exit" or Ctrl+C to quit.\n`);
@@ -109,7 +116,9 @@ function prompt(): void {
       const stdout = await result.stdout();
       if (stdout) process.stdout.write(stdout);
       if (!stdout?.endsWith("\n")) process.stdout.write("\n");
-      if (result.exitCode !== 0) {
+      const stderr = await result.stderr();
+      if (stderr) process.stderr.write(dim(stderr));
+      if (result.exitCode != null && result.exitCode !== 0) {
         console.error(red(`[exit ${result.exitCode}]`));
       }
     } catch (err) {
