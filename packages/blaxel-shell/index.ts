@@ -64,6 +64,19 @@ try {
   // binary directly into the filesystem — no apt or Debian infrastructure needed.
   // gcompat (not libc6-compat) is required because the mesa daemon's gRPC
   // connections deadlock under libc6-compat's musl shim.
+  //
+  // Alternatively, you can build a custom Debian-based Blaxel template that
+  // uses the standard install script. Create a Dockerfile:
+  //
+  //   FROM debian:bookworm-slim
+  //   COPY --from=ghcr.io/blaxel-ai/sandbox:latest /sandbox-api /usr/local/bin/sandbox-api
+  //   RUN apt-get update && apt-get install -y curl fuse3 ca-certificates \
+  //       && curl -fsSL https://mesa.dev/install.sh | sh -s -- -y \
+  //       && rm -rf /var/lib/apt/lists/*
+  //   ENTRYPOINT ["/usr/local/bin/sandbox-api"]
+  //
+  // Then deploy with `bl deploy` and reference your template in create():
+  //   SandboxInstance.create({ image: "your-template:latest", ... })
   await run(sandbox, "apk add --no-cache curl ca-certificates gcompat dpkg fuse3");
   // Pin to a specific version; update when upgrading Mesa
   await run(
