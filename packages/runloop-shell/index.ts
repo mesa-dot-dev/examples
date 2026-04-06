@@ -5,7 +5,6 @@ import TinyRunloopRepl from "./tiny-runloop-repl.ts";
 const ORG = "your-example-org";  // The org you want to use.
 const MESA_API_KEY = process.env["MESA_API_KEY"] ?? (() => { throw Error("$MESA_API_KEY not set.") })();
 
-// Let's create a new small runloop container for testing mesa.
 const devbox = await (new RunloopSDK()).devbox.create({ name: `mesa-example-shell` });
 
 try {
