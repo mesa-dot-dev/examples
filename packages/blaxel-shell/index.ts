@@ -2,7 +2,7 @@
 /**
  * Mesa + Blaxel interactive shell
  *
- * Spins up a Blaxel sandbox, clones a Mesa repo into it via Git,
+ * Spins up a Blaxel sandbox, mounts a Mesa repo via FUSE inside it,
  * and gives you a bash prompt that executes in the sandbox.
  *
  * Usage:
@@ -30,7 +30,6 @@ if (!org || !repo) {
 async function run(sandbox: SandboxInstance, command: string) {
   const result = await sandbox.process.exec({ command, waitForCompletion: true });
   if (result.exitCode !== 0) {
-    // Redact API keys from error output
     const safeCmd = command.replace(/mesa_[A-Za-z0-9]+/g, "mesa_***");
     console.error(red(`Command failed: ${safeCmd}`));
     if (result.stdout) console.error(dim(result.stdout));
@@ -56,14 +55,49 @@ const sandbox = await SandboxInstance.create({
   region: "us-pdx-1",
 });
 
-const cwd = `/home/user/${repo}`;
+const MOUNT_POINT = "/mnt/mesa";
+const CONFIG_PATH = "/etc/mesa/config.toml";
+const cwd = `${MOUNT_POINT}/${org}/${repo}`;
 
 try {
-  // Mesa repos are Git-compatible — clone directly via Mesa's Git HTTP endpoint.
-  // Blaxel sandboxes are Firecracker microVMs whose minimal guest kernel does not
-  // support user-space FUSE daemons, so we use git clone instead of mesa mount.
-  console.log(dim(`Cloning ${org}/${repo}...`));
-  await run(sandbox, `git clone https://t:${apiKey}@api.mesa.dev/${org}/${repo}.git ${cwd}`);
+  console.log(dim("Installing Mesa CLI..."));
+
+  // Blaxel's base image is Alpine — the Mesa install script requires apt, so we
+  // download the .deb directly and extract the binary.
+  // gcompat is required (not libc6-compat) for the mesa daemon's gRPC connections.
+  await run(sandbox, "apk add --no-cache curl ca-certificates gcompat dpkg fuse3");
+  await run(
+    sandbox,
+    [
+      `curl -fsSL "https://packages.buildkite.com/mesa-dot-dev/debian-public/any/pool/any/main/m/mesa/mesa_0.15.0_amd64.deb" -o /tmp/mesa.deb`,
+      `dpkg-deb -x /tmp/mesa.deb /`,
+      `rm -f /tmp/mesa.deb`,
+    ].join(" && "),
+  );
+
+  // Write Mesa config and start the FUSE mount
+  console.log(dim(`Mounting ${org}/${repo}...`));
+
+  const mesaConfig = [
+    `mount-point = "${MOUNT_POINT}"`,
+    `[organizations.${org}]`,
+    `api-key = "${apiKey}"`,
+  ].join("\n");
+
+  await run(sandbox, `mkdir -p /etc/mesa ${MOUNT_POINT}`);
+  await sandbox.fs.write(CONFIG_PATH, mesaConfig);
+  await run(sandbox, `mesa -c ${CONFIG_PATH} mount --daemonize`);
+
+  // Wait for the FUSE mount to be ready (daemonize returns before mount is live)
+  for (let i = 0; i < 30; i++) {
+    const check = await sandbox.process.exec({
+      command: `timeout 5 ls ${cwd} 2>/dev/null`,
+      waitForCompletion: true,
+    });
+    if (check.exitCode === 0) break;
+    if (i === 29) throw new Error("Timed out waiting for FUSE mount");
+    await new Promise((r) => setTimeout(r, 200));
+  }
 } catch (err) {
   console.error(red("Bootstrap failed:"), err instanceof Error ? err.message : err);
   await sandbox.delete().catch(() => {});
