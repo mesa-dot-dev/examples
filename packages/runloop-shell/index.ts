@@ -1,135 +1,46 @@
 #!/usr/bin/env node
-/**
- * Mesa + Runloop interactive shell
- *
- * Spins up a Runloop devbox, mounts a Mesa repo via FUSE inside it,
- * and gives you a bash prompt that executes in the devbox.
- *
- * Usage:
- *   npx tsx index.ts <org> <repo>
- *
- * Environment:
- *   MESA_API_KEY    — Mesa API key
- *   RUNLOOP_API_KEY — Runloop API key
- */
-
-import * as readline from "node:readline";
-import { Mesa } from "@mesadev/sdk";
 import { RunloopSDK } from "@runloop/api-client";
+import TinyRunloopRepl from "./tiny-runloop-repl.ts";
 
-const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
-const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
+const ORG = "your-example-org";  // The org you want to use.
+const MESA_API_KEY = process.env["MESA_API_KEY"] ?? (() => { throw Error("$MESA_API_KEY not set.") })();
 
-const [org, repo] = process.argv.slice(2);
+// Let's create a new small runloop container for testing mesa.
+const devbox = await (new RunloopSDK()).devbox.create({ name: `mesa-example-shell` });
 
-if (!org || !repo) {
-  console.error("Usage: npx tsx index.ts <org> <repo>");
-  process.exit(1);
-}
+try {
+  // Set up mesa within the Runloop container.
+  //
+  // We recommend installing mesa as part of the container definition, but here we install it directly to keep the
+  // example small.
 
-// --- Bootstrap ---
+  // It is critical that you enable the user_allow_other flag in your fuse configuration.
+  //
+  // This allows users outside of yourself to also access the mesa mount you mounted. Mesa requires this for operation.
+  // See https://www.man7.org/linux/man-pages/man8/mount.fuse3.8.html for more details.
+  await devbox.cmd.exec("sudo sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf");
 
-console.log(dim("Creating Runloop devbox..."));
+  // Runloop does not allow changing the groups of any users, so you must allow everyone to access the fuse device.
+  await devbox.cmd.exec("sudo chmod 666 /dev/fuse");
 
-const sdk = new RunloopSDK();
+  // You can install mesa as per the simple guide in https://docs.mesa.dev/content/virtual-filesystem/os-level.
+  await devbox.cmd.exec("curl -fsSL https://mesa.dev/install.sh | sh");
 
-// launch_commands install Mesa CLI and FUSE deps into the devbox.
-// For production use, consider a Runloop Blueprint (cached Docker image) instead.
-const devbox = await sdk.devbox.create({
-  name: `mesa-shell-${Date.now()}`,
-  launch_parameters: {
-    resource_size_request: "SMALL",
-    keep_alive_time_seconds: 3600,
-    launch_commands: [
-      "apt-get update && apt-get install -y --no-install-recommends ca-certificates curl fuse3 libssl3 openssl && rm -rf /var/lib/apt/lists/*",
-      "sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf",
-      "curl -fsSL https://mesa.dev/install.sh | sh",
-    ],
-  },
-});
+  // You can run mesa in daemon mode to kick it off in the background.
+  //
+  // The flags we are using here are:
+  //   -d,--daemonize       Spawns mesa in the background
+  //   -y,--non-interactive Tells mesa to use the default values for all its configuration values.
+  //
+  // We also pass the environment variable:
+  //   MESA_ORGS=<org>:<api-key>,... Tells mesa to configure the given organization with the given API key.
+  //                                 mesa will store this information in its configuration file. See
+  //                                 https://docs.mesa.dev/content/reference/mesa-cli-configuration for more details.
+  await devbox.cmd.exec(`MESA_ORGS=${ORG}:${MESA_API_KEY} mesa mount -d -y`);
 
-// Generate a scoped, short-lived API key for the devbox
-const mesa = new Mesa({ org });
-const ephemeralKey = await mesa.apiKeys.create({
-  name: `runloop-shell-${Date.now()}`,
-  scopes: ["read", "write"],
-  expires_in_seconds: 360000,
-});
-
-// Write Mesa config and start the FUSE mount
-const MOUNT_POINT = `/home/user/mesa/mnt`;
-const CONFIG_PATH = `/etc/mesa/config.toml`;
-
-console.log(dim(`Mounting ${org}/${repo}...`));
-
-const mesaConfig = `
-mount-point = "${MOUNT_POINT}"
-[organizations.${org}]
-api-key = "${ephemeralKey.key}"
-`;
-
-await devbox.cmd.exec(`mkdir -p /etc/mesa ${MOUNT_POINT}`);
-await devbox.file.write({ file_path: CONFIG_PATH, contents: mesaConfig });
-await devbox.cmd.exec(`mesa -c ${CONFIG_PATH} mount --daemonize`);
-
-// Wait for the FUSE mount to be ready (daemonize returns before mount is live)
-const cwd = `${MOUNT_POINT}/${org}/${repo}`;
-let mounted = false;
-for (let i = 0; i < 30; i++) {
-  const check = await devbox.cmd.exec(`ls ${cwd} 2>/dev/null`);
-  if (check.exitCode === 0) { mounted = true; break; }
-  await new Promise((r) => setTimeout(r, 200));
-}
-
-if (!mounted) {
-  console.error(red("Timed out waiting for FUSE mount."));
+  // You can now explore repos in your org. We've written a tiny REPL here you can use to explore the container.
+  (new TinyRunloopRepl(devbox)).run();
+} finally {
+  // No matter what happens, let's make sure we close the devbox so we don't burn Runloop tokens!
   await devbox.shutdown();
-  process.exit(1);
 }
-
-console.log(`Connected to ${org}/${repo}. Type "exit" or Ctrl+C to quit.\n`);
-
-// --- REPL ---
-
-async function cleanup() {
-  console.log(dim("\nShutting down devbox..."));
-  await devbox.shutdown();
-  console.log("Bye!");
-  process.exit(0);
-}
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-rl.on("close", cleanup);
-
-function prompt(): void {
-  rl.question("$ ", async (input) => {
-    const trimmed = input.trim();
-    if (!trimmed) return prompt();
-    if (trimmed === "exit") return cleanup();
-
-    try {
-      const result = await devbox.cmd.exec(`cd ${cwd} && ${trimmed}`);
-      const stdout = await result.stdout();
-      if (stdout) process.stdout.write(stdout);
-      if (!stdout?.endsWith("\n")) process.stdout.write("\n");
-      const stderr = await result.stderr();
-      if (stderr) process.stderr.write(dim(stderr));
-      if (result.exitCode != null && result.exitCode !== 0) {
-        console.error(red(`[exit ${result.exitCode}]`));
-      }
-    } catch (err) {
-      console.error(
-        red("Error:"),
-        err instanceof Error ? err.message : err
-      );
-    }
-
-    prompt();
-  });
-}
-
-prompt();

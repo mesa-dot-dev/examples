@@ -1,4 +1,11 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["index.ts"]
+  "include": ["index.ts"],
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true
+  }
 }
