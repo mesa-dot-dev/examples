@@ -58,9 +58,12 @@ const cwd = `${MOUNT_POINT}/${org}/${repo}`;
 try {
   console.log(dim("Installing Mesa CLI..."));
 
-  // Blaxel's base image is Alpine — the Mesa install script requires apt, so we
-  // download the .deb directly and extract the binary.
-  // gcompat (not libc6-compat) is required for the mesa daemon's gRPC connections.
+  // Blaxel's base image is Alpine, but the Mesa CLI is distributed as a .deb
+  // package and the install script (https://mesa.dev/install.sh) requires apt.
+  // To work around this, we download the .deb and use dpkg-deb to extract the
+  // binary directly into the filesystem — no apt or Debian infrastructure needed.
+  // gcompat (not libc6-compat) is required because the mesa daemon's gRPC
+  // connections deadlock under libc6-compat's musl shim.
   await run(sandbox, "apk add --no-cache curl ca-certificates gcompat dpkg fuse3");
   // Pin to a specific version; update when upgrading Mesa
   await run(
