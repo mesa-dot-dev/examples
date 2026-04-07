@@ -85,6 +85,35 @@ npm start -- <org> <repo>
 
 ~220 lines of TypeScript. Dependencies: `@mesadev/sdk`, `langchain`, `@langchain/anthropic`, `zod`.
 
+## Cloud sandboxes
+
+These examples mount Mesa repos inside cloud development environments using the Mesa CLI. The CLI runs a FUSE filesystem inside the sandbox — the repo's files appear as a normal directory, backed by Mesa's cloud storage.
+
+### `runloop-shell` — Interactive runloop shell
+
+Spins up a [Runloop](https://runloop.ai) devbox, installs the Mesa CLI, mounts a repo via FUSE, and drops you into a
+minimal shell. Commands execute inside the devbox against the mounted filesystem.
+
+```bash
+cd packages/runloop-shell
+npm i
+echo 'MESA_ORG=your-org' >> .env
+echo 'MESA_API_KEY=your-mesa-key' >> .env
+echo 'RUNLOOP_API_KEY='your-runloop-key' >> .env
+npx tsx index.ts
+```
+
+### `daytona-shell` — Interactive bash in a Daytona sandbox
+
+Same idea, using [Daytona](https://daytona.io) instead of Runloop.
+
+```bash
+cd packages/daytona-shell
+npm start -- <org> <repo>
+```
+
+~120 lines of TypeScript. Dependencies: `@mesadev/sdk`, `@daytonaio/sdk`.
+
 ## How it works
 
 1. `Mesa` client creates a scoped API key and initializes `MesaFileSystem` (native Rust via NAPI)
@@ -113,7 +142,13 @@ The agent examples add one more layer:
 │   ├── just-bash-mastra/         # AI agent — Mastra
 │   │   ├── package.json
 │   │   └── index.ts
-│   └── just-bash-langchain/      # AI agent — LangChain
+│   ├── just-bash-langchain/      # AI agent — LangChain
+│   │   ├── package.json
+│   │   └── index.ts
+│   ├── runloop-shell/            # Mesa CLI in Runloop devbox
+│   │   ├── package.json
+│   │   └── index.ts
+│   └── daytona-shell/            # Mesa CLI in Daytona sandbox
 │       ├── package.json
 │       └── index.ts
 ```
@@ -123,3 +158,4 @@ The agent examples add one more layer:
 - Node.js >= 18
 - Mesa account with an admin API key
 - Anthropic API key (for the agent examples)
+- Runloop or Daytona API key (for the cloud sandbox examples)
