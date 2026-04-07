@@ -13,6 +13,11 @@ try {
   // We recommend installing mesa as part of the container definition, but here we install it directly to keep the
   // example small.
 
+  // You can install mesa as per the guide in https://docs.mesa.dev/content/virtual-filesystem/os-level.
+  //
+  // Mesa's installer will install all its dependencies through your system's package manager.
+  await devbox.cmd.exec("curl -fsSL https://mesa.dev/install.sh | sh");
+
   // It is critical that you enable the user_allow_other flag in your fuse configuration.
   //
   // This allows users outside of yourself to also access the mesa mount you mounted. Mesa requires this for operation.
@@ -20,16 +25,17 @@ try {
   await devbox.cmd.exec("sudo sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf");
 
   // Runloop does not allow changing the groups of any users, so you must allow everyone to access the fuse device.
+  //
+  // /dev/fuse is owned by root:fuse so normally you just add your user to the fuse group but unfortunately, runloop
+  // doesn't allow that.
   await devbox.cmd.exec("sudo chmod 666 /dev/fuse");
-
-  // You can install mesa as per the simple guide in https://docs.mesa.dev/content/virtual-filesystem/os-level.
-  await devbox.cmd.exec("curl -fsSL https://mesa.dev/install.sh | sh");
 
   // You can run mesa in daemon mode to kick it off in the background.
   //
   // The flags we are using here are:
   //   -d,--daemonize       Spawns mesa in the background
-  //   -y,--non-interactive Tells mesa to use the default values for all its configuration values.
+  //   -y,--non-interactive Tells mesa to use the default values for all its configuration values. It will create a new
+  //                        config file for you.
   //
   // We also pass the environment variable:
   //   MESA_ORGS=<org>:<api-key>,... Tells mesa to configure the given organization with the given API key.
