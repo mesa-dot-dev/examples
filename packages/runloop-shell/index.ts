@@ -5,14 +5,16 @@
 //   MESA_API_KEY    - Your mesa API key
 //   RUNLOOP_API_KEY - Your runloop API key
 
+import 'dotenv/config';
 import { RunloopSDK } from "@runloop/api-client";
 import tinyRunloopRepl from "./tiny-runloop-repl.ts";
 
 const ORG = process.env["MESA_ORG"] ?? (() => { throw Error("$MESA_ORG not set."); })();
 const MESA_API_KEY = process.env["MESA_API_KEY"] ?? (() => { throw Error("$MESA_API_KEY not set.") })();
+const RUNLOOP_API_KEY = process.env["RUNLOOP_API_KEY"] ?? (() => { throw Error("$RUNLOOP_API_KEY not set.") })();
 
 console.log("creating a devbox...");
-const devbox = await (new RunloopSDK()).devbox.create({ name: `mesa-example-shell` });
+const devbox = await (new RunloopSDK({ bearerToken: RUNLOOP_API_KEY })).devbox.create({ name: `mesa-example-shell` });
 
 try {
   // Set up mesa within the Runloop container.
@@ -50,6 +52,14 @@ try {
   //   MESA_ORGS=<org>:<api-key>,... Tells mesa to configure the given organization with the given API key.
   //                                 mesa will store this information in its configuration file. See
   //                                 https://docs.mesa.dev/content/reference/mesa-cli-configuration for more details.
+  //
+  // Note that mesa will commit the orgs to the config file the first time it is booted up, so you do not need to
+  // specify it again. When mesa is already configured, it will append the orgs given through the environment to the
+  // ones in the config.toml.
+  //
+  // Additionally, mesa allows you to specify an ephemeral key which persists for the lifetime of the sandbox, but in
+  // the spirit of keeping this example small, we use the main API key. See
+  // https://docs.mesa.dev/content/getting-started/auth-and-permissions for more details.
   console.log("mounting mesa...");
   await devbox.cmd.exec(`MESA_ORGS=${ORG}:${MESA_API_KEY} mesa mount -d -y`);
 
@@ -57,7 +67,7 @@ try {
   //
   // The default configuration is created in ~/.config/mesa/config.toml
   // and your files will be in ~/.local/share/mesa/mnt
-  await tinyRunloopRepl(devbox);
+  await tinyRunloopRepl(devbox, { cwd: "~/.local/share/mesa/mnt" });
 } finally {
   // No matter what happens, let's make sure we close the devbox so we don't burn Runloop tokens!
   console.log("shutting down devbox...");

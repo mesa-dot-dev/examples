@@ -95,12 +95,12 @@ Spins up a [Runloop](https://runloop.ai) devbox, installs the Mesa CLI, mounts a
 minimal shell. Commands execute inside the devbox against the mounted filesystem.
 
 ```bash
-cd packages/runloop-shell \
-    && pnpm i \
-    && MESA_ORG='your-org' \
-       MESA_API_KEY='your-mesa-key' \
-       RUNLOOP_API_KEY='your-runloop-key' \
-       pnpm exec tsx index.ts
+cd packages/runloop-shell
+npm i
+echo 'MESA_ORG=your-org' >> .env
+echo 'MESA_API_KEY=your-mesa-key' >> .env
+echo 'RUNLOOP_API_KEY='your-runloop-key' >> .env
+npx tsx index.ts
 ```
 
 ### `daytona-shell` — Interactive bash in a Daytona sandbox
