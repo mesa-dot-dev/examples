@@ -1,4 +1,10 @@
 #!/usr/bin/env node
+
+// To run this example, you'll need to set three environment variables:
+//   MESA_ORG        - The organization you want to mount within the container
+//   MESA_API_KEY    - Your mesa API key
+//   RUNLOOP_API_KEY - Your runloop API key
+
 import { RunloopSDK } from "@runloop/api-client";
 import tinyRunloopRepl from "./tiny-runloop-repl.ts";
 
