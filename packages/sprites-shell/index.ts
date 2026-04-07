@@ -26,14 +26,15 @@ const sprite = await client.createSprite(`mesa-${ORG}`);
 try {
 
   // Mesa mounts the org into the filesystem, so repo commands feel local.
-  await sprite.exec("apt-get update -qq && apt-get install -y -qq fuse3 curl ca-certificates > /dev/null 2>&1");
-  await sprite.exec("curl -fsSL https://mesa.dev/install.sh | sh -s -- -y");
-  await sprite.exec("sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf");
+  await sprite.exec("sudo apt-get update");
+  await sprite.exec("sudo apt-get install -y fuse3 curl ca-certificates");
+  await sprite.execFile("sh", ["-c", "curl -fsSL https://mesa.dev/install.sh | sudo sh -s -- -y"]);
+  await sprite.execFile("sed", ["-i", "s/^#user_allow_other/user_allow_other/", "/etc/fuse.conf"]);
 
 
   // Flags: -d: (daemonize) runs in the background & -y: (non-interactive) skips the setup wizard.
   console.log("Mounting Mesa...");
-  await sprite.exec(`MESA_ORGS=${ORG}:${MESA_API_KEY} MESA_MOUNT_POINT=/mnt/mesa mesa mount -d -y`);
+  await sprite.execFile("sh", ["-c", `MESA_ORGS=${ORG}:${MESA_API_KEY} MESA_MOUNT_POINT=/mnt/mesa mesa mount -d -y`]);
 
   // Mesa makes the org show up under /mnt/mesa, so normal shell commands feel local.
   const cwd = `/mnt/mesa/${ORG}`;
@@ -48,7 +49,7 @@ try {
     if (cmd === "exit") break;
 
     try {
-      const result = await sprite.exec(cmd, { cwd });
+      const result = await sprite.execFile("sh", ["-c", cmd], { cwd });
       const stdout = String(result.stdout);
       const stderr = String(result.stderr);
       if (stdout) process.stdout.write(stdout);
