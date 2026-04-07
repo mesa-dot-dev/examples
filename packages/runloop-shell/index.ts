@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 import { RunloopSDK } from "@runloop/api-client";
-import TinyRunloopRepl from "./tiny-runloop-repl.ts";
+import tinyRunloopRepl from "./tiny-runloop-repl.ts";
 
-const ORG = "your-example-org";  // The org you want to use.
+const ORG = "mesa-marko";  // The org you want to use.
 const MESA_API_KEY = process.env["MESA_API_KEY"] ?? (() => { throw Error("$MESA_API_KEY not set.") })();
 
+console.log("creating a devbox...");
 const devbox = await (new RunloopSDK()).devbox.create({ name: `mesa-example-shell` });
 
 try {
@@ -16,12 +17,14 @@ try {
   // You can install mesa as per the guide in https://docs.mesa.dev/content/virtual-filesystem/os-level.
   //
   // Mesa's installer will install all its dependencies through your system's package manager.
+  console.log("installing mesa...");
   await devbox.cmd.exec("curl -fsSL https://mesa.dev/install.sh | sh");
 
   // It is critical that you enable the user_allow_other flag in your fuse configuration.
   //
   // This allows users outside of yourself to also access the mesa mount you mounted. Mesa requires this for operation.
   // See https://www.man7.org/linux/man-pages/man8/mount.fuse3.8.html for more details.
+  console.log("configuring fuse...");
   await devbox.cmd.exec("sudo sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf");
 
   // Runloop does not allow changing the groups of any users, so you must allow everyone to access the fuse device.
@@ -41,11 +44,16 @@ try {
   //   MESA_ORGS=<org>:<api-key>,... Tells mesa to configure the given organization with the given API key.
   //                                 mesa will store this information in its configuration file. See
   //                                 https://docs.mesa.dev/content/reference/mesa-cli-configuration for more details.
+  console.log("mounting mesa...");
   await devbox.cmd.exec(`MESA_ORGS=${ORG}:${MESA_API_KEY} mesa mount -d -y`);
 
   // You can now explore repos in your org. We've written a tiny REPL here you can use to explore the container.
-  (new TinyRunloopRepl(devbox)).run();
+  //
+  // The default configuration is created in ~/.config/mesa/config.toml
+  // and your files will be in ~/.local/share/mesa/mnt
+  await tinyRunloopRepl(devbox);
 } finally {
   // No matter what happens, let's make sure we close the devbox so we don't burn Runloop tokens!
+  console.log("shutting down devbox...");
   await devbox.shutdown();
 }

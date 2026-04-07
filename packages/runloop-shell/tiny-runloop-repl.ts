@@ -1,28 +1,28 @@
 import { Devbox } from "@runloop/api-client";
 import * as readline from "node:readline";
 
-export default class TinyRunloopRepl {
-  #readline = readline.createInterface({
+/** Spawns the REPL so that users can use it. */
+export default function tinyRunloopRepl(devbox: Devbox, maybeRl?): Promise<void> {
+  const isFirstCall = !maybeRl;
+  const rl = maybeRl ?? readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-  })
+  });
 
-  #devbox: Devbox
+  return new Promise<void>((resolve) => {
+    if (isFirstCall) {
+      rl.on("close", () => resolve());
+    }
 
-  constructor(devbox: Devbox) {
-    this.#devbox = devbox;
-  }
-
-  /** Spawns the REPL so that users can use it. */
-  run() {
-    this.#readline.question("$ ", async (input: string) => {
+    rl.question("$ ", async (input: string) => {
       const trimmed = input.trim();
 
       if (!trimmed) {
-        return this.run();
+        resolve(tinyRunloopRepl(devbox, rl));
+        return;
       }
 
-      const result = await this.#devbox.cmd.exec(trimmed);
+      const result = await devbox.cmd.exec(trimmed);
       const exitCode = result.exitCode;
       const stdout = await result.stdout();
       const stderr = await result.stderr();
@@ -39,7 +39,7 @@ export default class TinyRunloopRepl {
         console.error(`The process exited with a non-zero exit code: ${exitCode}`);
       }
 
-      this.run();
+      resolve(tinyRunloopRepl(devbox, rl));
     });
-  }
+  });
 }
