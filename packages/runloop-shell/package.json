@@ -3,9 +3,6 @@
   "version": "0.1.0",
   "description": "Interactive shell over a Mesa cloud repo running in a Runloop devbox",
   "type": "module",
-  "scripts": {
-    "start": "tsx --env-file=../../.env index.ts"
-  },
   "dependencies": {
     "@mesadev/sdk": "^0.15.0",
     "@runloop/api-client": "^1.17.0"

@@ -89,31 +89,14 @@ npm start -- <org> <repo>
 
 These examples mount Mesa repos inside cloud development environments using the Mesa CLI. The CLI runs a FUSE filesystem inside the sandbox — the repo's files appear as a normal directory, backed by Mesa's cloud storage.
 
-### `runloop-shell` — Interactive bash in a Runloop devbox
+### `runloop-shell` — Interactive runloop shell
 
-Spins up a [Runloop](https://runloop.ai) devbox, installs the Mesa CLI, mounts a repo via FUSE, and drops you into a bash prompt. Commands execute inside the devbox against the mounted filesystem.
+Spins up a [Runloop](https://runloop.ai) devbox, installs the Mesa CLI, mounts a repo via FUSE, and drops you into a
+minimal shell. Commands execute inside the devbox against the mounted filesystem.
 
 ```bash
-cd packages/runloop-shell
-npm start -- <org> <repo>
+cd packages/runloop-shell && pnpm i && pnpm exec tsx index.ts
 ```
-
-```
-Creating Runloop devbox...
-Mounting acme/my-project...
-Connected to acme/my-project. Type "exit" or Ctrl+C to quit.
-
-$ ls
-README.md  package.json  src/
-$ cat README.md | head -3
-# My Project
-A sample project.
-$ exit
-Shutting down devbox...
-Bye!
-```
-
-~130 lines of TypeScript. Dependencies: `@mesadev/sdk`, `@runloop/api-client`.
 
 ### `daytona-shell` — Interactive bash in a Daytona sandbox
 

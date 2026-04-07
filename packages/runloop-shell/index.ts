@@ -2,7 +2,7 @@
 import { RunloopSDK } from "@runloop/api-client";
 import tinyRunloopRepl from "./tiny-runloop-repl.ts";
 
-const ORG = "mesa-marko";  // The org you want to use.
+const ORG = process.env["MESA_ORG"] ?? (() => { throw Error("$MESA_ORG not set."); })();
 const MESA_API_KEY = process.env["MESA_API_KEY"] ?? (() => { throw Error("$MESA_API_KEY not set.") })();
 
 console.log("creating a devbox...");
