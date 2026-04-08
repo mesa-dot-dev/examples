@@ -1,15 +1,16 @@
 {
-  "name": "just-bash-mastra",
+  "name": "just-bash-langchain",
   "version": "0.1.0",
-  "description": "AI agent (Mastra) with bash access to Mesa's cloud filesystem",
+  "description": "AI agent (LangChain) with bash access to Mesa's cloud filesystem",
   "type": "module",
   "scripts": {
-    "start": "tsx --env-file=../../.env index.ts"
+    "start": "tsx --env-file=../.env index.ts"
   },
   "dependencies": {
-    "@mastra/core": "^1.15.0",
+    "langchain": "^1.2.0",
+    "@langchain/core": "^1.1.0",
+    "@langchain/anthropic": "^1.0.0",
     "@mesadev/sdk": "^0.15.0",
-    "ai": "^5.0.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {

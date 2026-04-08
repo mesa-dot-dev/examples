@@ -15,7 +15,7 @@ MESA_API_KEY=your_mesa_admin_api_key
 ANTHROPIC_API_KEY=your_anthropic_api_key
 ```
 
-Each example's start script uses `tsx --env-file=../../.env` to load it automatically — no `dotenv` package needed.
+Each example's start script uses `tsx --env-file=../.env` to load it automatically — no `dotenv` package needed.
 
 ## just-bash
 
@@ -26,7 +26,7 @@ These examples use Mesa's cloud filesystem with [just-bash](https://github.com/v
 The simplest possible example. Connects to a Mesa repo and gives you a `$` prompt. You type bash commands, you see output. No AI, no agent — just bash.
 
 ```bash
-cd packages/just-bash-shell
+cd just-bash-shell
 npm start -- <org> <repo>
 ```
 
@@ -45,7 +45,7 @@ $ exit
 An AI agent (Claude) that can run bash commands to explore and answer questions about a Mesa repo. Uses the [Vercel AI SDK](https://sdk.vercel.ai)'s `streamText` and `fullStream` to render reasoning, tool calls, and text as the agent works.
 
 ```bash
-cd packages/just-bash-ai-sdk
+cd just-bash-ai-sdk
 npm start -- <org> <repo>
 ```
 
@@ -68,7 +68,7 @@ This project is written in TypeScript.
 The same AI agent implemented using [Mastra](https://mastra.ai). Uses Mastra's `Agent` class with `createTool` and the built-in model router for Anthropic.
 
 ```bash
-cd packages/just-bash-mastra
+cd just-bash-mastra
 npm start -- <org> <repo>
 ```
 
@@ -79,7 +79,7 @@ npm start -- <org> <repo>
 The same AI agent implemented using [LangChain](https://js.langchain.com). Uses LangChain's `createAgent` with `tool` and streams updates via the LangGraph runtime.
 
 ```bash
-cd packages/just-bash-langchain
+cd just-bash-langchain
 npm start -- <org> <repo>
 ```
 
@@ -95,7 +95,7 @@ Spins up a [Runloop](https://runloop.ai) devbox, installs the Mesa CLI, mounts a
 minimal shell. Commands execute inside the devbox against the mounted filesystem.
 
 ```bash
-cd packages/runloop-shell
+cd runloop-shell
 npm i
 echo 'MESA_ORG=your-org' >> .env
 echo 'MESA_API_KEY=your-mesa-key' >> .env
@@ -108,7 +108,7 @@ npx tsx index.ts
 Same idea, using [Daytona](https://daytona.io) instead of Runloop.
 
 ```bash
-cd packages/daytona-shell
+cd daytona-shell
 npm start -- <org> <repo>
 ```
 
@@ -130,27 +130,25 @@ The agent examples add one more layer:
 ```
 ├── .env                          # shared secrets (gitignored)
 ├── .env.example
-├── package.json                  # npm workspaces root
 ├── tsconfig.json                 # shared base TS config
-├── packages/
-│   ├── just-bash-shell/          # bare bash REPL
-│   │   ├── package.json
-│   │   └── index.ts
-│   ├── just-bash-ai-sdk/         # AI agent — Vercel AI SDK
-│   │   ├── package.json
-│   │   └── index.ts
-│   ├── just-bash-mastra/         # AI agent — Mastra
-│   │   ├── package.json
-│   │   └── index.ts
-│   ├── just-bash-langchain/      # AI agent — LangChain
-│   │   ├── package.json
-│   │   └── index.ts
-│   ├── runloop-shell/            # Mesa CLI in Runloop devbox
-│   │   ├── package.json
-│   │   └── index.ts
-│   └── daytona-shell/            # Mesa CLI in Daytona sandbox
-│       ├── package.json
-│       └── index.ts
+├── just-bash-shell/              # bare bash REPL
+│   ├── package.json
+│   └── index.ts
+├── just-bash-ai-sdk/             # AI agent — Vercel AI SDK
+│   ├── package.json
+│   └── index.ts
+├── just-bash-mastra/             # AI agent — Mastra
+│   ├── package.json
+│   └── index.ts
+├── just-bash-langchain/          # AI agent — LangChain
+│   ├── package.json
+│   └── index.ts
+├── runloop-shell/                # Mesa CLI in Runloop devbox
+│   ├── package.json
+│   └── index.ts
+└── daytona-shell/                # Mesa CLI in Daytona sandbox
+    ├── package.json
+    └── index.ts
 ```
 
 ## Requirements

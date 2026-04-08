@@ -1,16 +1,15 @@
 {
-  "name": "just-bash-langchain",
+  "name": "just-bash-ai-sdk",
   "version": "0.1.0",
-  "description": "AI agent (LangChain) with bash access to Mesa's cloud filesystem",
+  "description": "AI agent (Vercel AI SDK) with bash access to Mesa's cloud filesystem",
   "type": "module",
   "scripts": {
-    "start": "tsx --env-file=../../.env index.ts"
+    "start": "tsx --env-file=../.env index.ts"
   },
   "dependencies": {
-    "langchain": "^1.2.0",
-    "@langchain/core": "^1.1.0",
-    "@langchain/anthropic": "^1.0.0",
+    "@ai-sdk/anthropic": "^3.0.0",
     "@mesadev/sdk": "^0.15.0",
+    "ai": "^6.0.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {

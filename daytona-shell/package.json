@@ -1,12 +1,13 @@
 {
-  "name": "just-bash-shell",
+  "name": "daytona-shell",
   "version": "0.1.0",
-  "description": "Interactive bash shell over a Mesa cloud repo — no AI, just bash",
+  "description": "Interactive shell over a Mesa cloud repo running in a Daytona sandbox",
   "type": "module",
   "scripts": {
-    "start": "tsx --env-file=../../.env index.ts"
+    "start": "tsx --env-file=../.env index.ts"
   },
   "dependencies": {
+    "@daytonaio/sdk": "^0.159.0",
     "@mesadev/sdk": "^0.15.0"
   },
   "devDependencies": {
