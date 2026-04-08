@@ -1,0 +1,13 @@
+[project]
+name = "daytona-python-shell"
+version = "0.1.0"
+description = "Interactive shell over a Mesa cloud repo running in a Daytona sandbox (Python)"
+requires-python = ">=3.11"
+dependencies = [
+    "daytona>=0.158.0",
+    "mesa-sdk>=0.19.0",
+    "python-dotenv>=1.2.2",
+]
+
+[tool.uv]
+dev-dependencies = []

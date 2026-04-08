@@ -114,6 +114,18 @@ npm start -- <org> <repo>
 
 ~120 lines of TypeScript. Dependencies: `@mesadev/sdk`, `@daytonaio/sdk`.
 
+### `daytona-python-shell` — Interactive bash in a Daytona sandbox (Python)
+
+Same idea as `daytona-shell`, but written in Python using the [`mesa-sdk`](https://pypi.org/project/mesa-sdk/) and
+[`daytona`](https://pypi.org/project/daytona/) Python packages.
+
+```bash
+cd daytona-python-shell
+uv run main.py # requires env vars to be set
+```
+
+~90 lines of Python. Dependencies: `mesa-sdk`, `daytona`.
+
 ## How it works
 
 1. `Mesa` client creates a scoped API key and initializes `MesaFileSystem` (native Rust via NAPI)
@@ -146,9 +158,13 @@ The agent examples add one more layer:
 ├── runloop-shell/                # Mesa CLI in Runloop devbox
 │   ├── package.json
 │   └── index.ts
-└── daytona-shell/                # Mesa CLI in Daytona sandbox
-    ├── package.json
-    └── index.ts
+├── daytona-shell/                # Mesa CLI in Daytona sandbox
+│   ├── package.json
+│   └── index.ts
+└── daytona-python-shell/         # Mesa CLI in Daytona sandbox (Python)
+    ├── pyproject.toml
+    ├── main.py
+    └── repl.py
 ```
 
 ## Requirements
