@@ -1,14 +1,19 @@
 import path from 'node:path';
 import * as readline from 'node:readline';
-import type { Devbox } from '@runloop/api-client';
+import type { Sandbox } from '@daytonaio/sdk';
 
 /**
- * Options parameter for the @see tinyRunloopRepl function.
+ * Options parameter for the @see tinyDaytonaRepl function.
  */
-export interface IRunloopReplOptions {
+export interface IDaytonaReplOptions {
   /** The current working directory. */
   cwd: string | undefined;
 }
+
+type CommandResult = {
+  exitCode: number;
+  stdout: string;
+};
 
 function expandTilde(filePath: string, homedir: string): string {
   return filePath.startsWith('~') ? path.posix.join(homedir, filePath.slice(1)) : filePath;
@@ -17,21 +22,21 @@ function expandTilde(filePath: string, homedir: string): string {
 class ShellState {
   #homedir: string;
   #cwd: string;
-  #devbox: Devbox;
+  #sandbox: Sandbox;
 
-  private constructor(homedir: string, cwd: string, devbox: Devbox) {
+  private constructor(homedir: string, cwd: string, sandbox: Sandbox) {
     this.#homedir = homedir;
     this.#cwd = cwd;
-    this.#devbox = devbox;
+    this.#sandbox = sandbox;
   }
 
-  static async create(devbox: Devbox, cwd: string): Promise<ShellState> {
-    const homedir = await ShellState.probeHome(devbox);
-    return new ShellState(homedir, expandTilde(cwd, homedir), devbox);
+  static async create(sandbox: Sandbox, cwd: string): Promise<ShellState> {
+    const homedir = await ShellState.probeHome(sandbox);
+    return new ShellState(homedir, expandTilde(cwd, homedir), sandbox);
   }
 
   /** Execute a shell command. Handles `cd` gracefully enough. */
-  async run(cmd: string): Promise<[number | null, string | null, string | null] | null> {
+  async run(cmd: string): Promise<CommandResult | null> {
     const trimmed: string = cmd.trim();
     if (!trimmed) {
       return null;
@@ -46,14 +51,16 @@ class ShellState {
       return null;
     }
 
-    const result = await this.#devbox.cmd.exec(`cd ${this.#cwd} && ${trimmed}`);
-    return [result.exitCode, await result.stdout(), await result.stderr()];
+    const result = await this.#sandbox.process.executeCommand(`cd ${this.#cwd} && ${trimmed}`);
+    return {
+      exitCode: result.exitCode,
+      stdout: result.result,
+    };
   }
 
-  private static async probeHome(devbox: Devbox): Promise<string> {
-    const result = await devbox.cmd.exec('echo $HOME');
-    const stdout = await result.stdout();
-    return stdout.trim();
+  private static async probeHome(sandbox: Sandbox): Promise<string> {
+    const result = await sandbox.process.executeCommand('echo $HOME');
+    return result.result.trim();
   }
 
   private expandTilde(filePath: string): string {
@@ -73,13 +80,16 @@ function question(rl: readline.Interface, prompt: string): Promise<string | null
  *
  * This is a tiny REPL and is not a full shell, so it has an incredibly limited subset of regular shell commands.
  */
-export default async function tinyRunloopRepl(devbox: Devbox, options: IRunloopReplOptions | undefined): Promise<void> {
+export default async function tinyDaytonaRepl(
+  sandbox: Sandbox,
+  options: IDaytonaReplOptions | undefined
+): Promise<void> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
-  const shell = await ShellState.create(devbox, options?.cwd ?? '~');
+  const shell = await ShellState.create(sandbox, options?.cwd ?? '~');
 
   while (true) {
     const input = await question(rl, '$ ');
@@ -88,19 +98,15 @@ export default async function tinyRunloopRepl(devbox: Devbox, options: IRunloopR
       break;
     }
 
-    const res = await shell.run(input);
-    if (res === null) {
+    const result = await shell.run(input);
+    if (result === null) {
       continue;
     }
 
-    const [exitCode, stdout, stderr] = res;
+    const { exitCode, stdout } = result;
 
     if (stdout) {
       process.stdout.write(stdout);
-    }
-
-    if (stderr) {
-      process.stderr.write(stderr);
     }
 
     if (exitCode !== null && exitCode !== 0) {

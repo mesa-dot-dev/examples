@@ -1,11 +1,11 @@
 import path from 'node:path';
 import * as readline from 'node:readline';
-import type { Devbox } from '@runloop/api-client';
+import type { SandboxInstance } from '@blaxel/core';
 
 /**
- * Options parameter for the @see tinyRunloopRepl function.
+ * Options parameter for the @see tinyBlaxelRepl function.
  */
-export interface IRunloopReplOptions {
+export interface IReplOptions {
   /** The current working directory. */
   cwd: string | undefined;
 }
@@ -17,17 +17,17 @@ function expandTilde(filePath: string, homedir: string): string {
 class ShellState {
   #homedir: string;
   #cwd: string;
-  #devbox: Devbox;
+  #sandbox: SandboxInstance;
 
-  private constructor(homedir: string, cwd: string, devbox: Devbox) {
+  private constructor(homedir: string, cwd: string, sandbox: SandboxInstance) {
     this.#homedir = homedir;
     this.#cwd = cwd;
-    this.#devbox = devbox;
+    this.#sandbox = sandbox;
   }
 
-  static async create(devbox: Devbox, cwd: string): Promise<ShellState> {
-    const homedir = await ShellState.probeHome(devbox);
-    return new ShellState(homedir, expandTilde(cwd, homedir), devbox);
+  static async create(sandbox: SandboxInstance, cwd: string): Promise<ShellState> {
+    const homedir = await ShellState.probeHome(sandbox);
+    return new ShellState(homedir, expandTilde(cwd, homedir), sandbox);
   }
 
   /** Execute a shell command. Handles `cd` gracefully enough. */
@@ -46,14 +46,16 @@ class ShellState {
       return null;
     }
 
-    const result = await this.#devbox.cmd.exec(`cd ${this.#cwd} && ${trimmed}`);
-    return [result.exitCode, await result.stdout(), await result.stderr()];
+    const result = await this.#sandbox.process.exec({
+      command: `cd ${this.#cwd} && ${trimmed}`,
+      waitForCompletion: true,
+    });
+    return [result.exitCode, result.stdout, result.stderr];
   }
 
-  private static async probeHome(devbox: Devbox): Promise<string> {
-    const result = await devbox.cmd.exec('echo $HOME');
-    const stdout = await result.stdout();
-    return stdout.trim();
+  private static async probeHome(sandbox: SandboxInstance): Promise<string> {
+    const result = await sandbox.process.exec({ command: 'echo $HOME', waitForCompletion: true });
+    return result.stdout.trim();
   }
 
   private expandTilde(filePath: string): string {
@@ -73,13 +75,16 @@ function question(rl: readline.Interface, prompt: string): Promise<string | null
  *
  * This is a tiny REPL and is not a full shell, so it has an incredibly limited subset of regular shell commands.
  */
-export default async function tinyRunloopRepl(devbox: Devbox, options: IRunloopReplOptions | undefined): Promise<void> {
+export default async function tinyBlaxelRepl(
+  sandbox: SandboxInstance,
+  options: IReplOptions | undefined
+): Promise<void> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
-  const shell = await ShellState.create(devbox, options?.cwd ?? '~');
+  const shell = await ShellState.create(sandbox, options?.cwd ?? '~');
 
   while (true) {
     const input = await question(rl, '$ ');

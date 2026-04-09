@@ -4,11 +4,11 @@
   "description": "Creates a Mesa repo with three changes (a, b, c), then lets you pick one to mount and explore via bash",
   "type": "module",
   "scripts": {
-    "setup": "tsx --env-file=../.env setup.ts",
-    "start": "tsx --env-file=../.env index.ts"
+    "start": "tsx index.ts"
   },
   "dependencies": {
-    "@mesadev/sdk": "^0.15.0"
+    "@mesadev/sdk": "^0.20.0",
+    "dotenv": "^17.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

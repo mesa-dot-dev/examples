@@ -1,122 +1,90 @@
 #!/usr/bin/env node
-/**
- * Mesa + Daytona interactive shell
- *
- * Spins up a Daytona sandbox, mounts a Mesa repo via FUSE inside it,
- * and gives you a bash prompt that executes in the sandbox.
- *
- * Usage:
- *   npx tsx index.ts <org> <repo>
- *
- * Environment:
- *   MESA_API_KEY   — Mesa API key
- *   DAYTONA_API_KEY — Daytona API key
- */
 
-import * as readline from "node:readline";
-import { Mesa } from "@mesadev/sdk";
-import { Daytona, Image } from "@daytonaio/sdk";
+// To run this example, create a .env file in this directory with:
+//   MESA_ORG=your-org
+//   MESA_API_KEY=your-mesa-key
+//   DAYTONA_API_KEY=your-daytona-key
+//
+// Then run:
+//   npm start
 
-const dim = (s: string) => `\x1b[2m${s}\x1b[0m`;
-const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
+import 'dotenv/config';
+import { Daytona } from '@daytonaio/sdk';
+import tinyDaytonaRepl from './repl.ts';
 
-const [org, repo] = process.argv.slice(2);
-
-if (!org || !repo) {
-  console.error("Usage: npx tsx index.ts <org> <repo>");
-  process.exit(1);
+const ORG =
+  process.env.MESA_ORG ??
+  (() => {
+    throw Error('$MESA_ORG not set.');
+  })();
+const MESA_API_KEY =
+  process.env.MESA_API_KEY ??
+  (() => {
+    throw Error('$MESA_API_KEY not set.');
+  })();
+if (!process.env.DAYTONA_API_KEY) {
+  throw Error('$DAYTONA_API_KEY not set.');
 }
 
-// --- Bootstrap ---
-
-console.log(dim("Creating Daytona sandbox..."));
-
-const image = Image.base("debian:bookworm-slim").dockerfileCommands([
-  // This installs the necessary packages for the sandbox to work
-  // These deps are already available on most base Docker images,
-  // but slim images don't include them by default
-  "RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl fuse3 libssl3 openssl && rm -rf /var/lib/apt/lists/*",
-  // Enable non-root users to access the FUSE mount
-  "RUN sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf",
-  // Install Mesa CLI
-  "RUN curl -fsSL https://mesa.dev/install.sh | sh",
-]);
+console.log('Creating Daytona sandbox...');
 
 const daytona = new Daytona();
-const sandbox = await daytona.create({ image });
+const sandbox = await daytona.create();
 
-// Generate a scoped, short-lived API key for the sandbox
-const mesa = new Mesa({ org });
-const ephemeralKey = await mesa.apiKeys.create({
-  name: `daytona-shell-${Date.now()}`,
-  scopes: ["read", "write"],
-  expires_in_seconds: 360000,
-});
+try {
+  // Set up Mesa within the Daytona sandbox.
+  //
+  // We recommend installing Mesa as part of the container definition(ex.Docker image),
+  // but here we install it directly to keep the example small.
 
-// Write Mesa config and start the FUSE mount
-const MOUNT_POINT = `/home/daytona/mesa/mnt`;
-const CONFIG_PATH = `/etc/mesa/config.toml`;
+  // You can install Mesa as per the guide in https://docs.mesa.dev/content/virtual-filesystem/os-level.
+  //
+  // Mesa's installer will install all its dependencies through your system's package manager.
+  console.log('Installing Mesa...');
+  await sandbox.process.executeCommand('curl -fsSL https://mesa.dev/install.sh | sh');
 
-console.log(dim(`Mounting ${org}/${repo}...`));
+  // It is critical that you enable the user_allow_other flag in your fuse configuration.
+  //
+  // This allows users outside of yourself to also access the mesa mount you mounted.Mesa requires this for
+  // operation.See https://www.man7.org/linux/man-pages/man8/mount.fuse3.8.html for more details.
+  console.log('Configuring FUSE...');
+  await sandbox.process.executeCommand("sudo sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf");
 
-const mesaConfig = `
-  mount-point = "${MOUNT_POINT}"
-  [organizations.${org}]
-  api-key = "${ephemeralKey.key}"
-`;
-
-await sandbox.process.executeCommand(`mkdir -p /etc/mesa ${MOUNT_POINT}`);
-await sandbox.fs.uploadFile(Buffer.from(mesaConfig), CONFIG_PATH);
-await sandbox.process.executeCommand(`mesa -c ${CONFIG_PATH} mount --daemonize`);
-
-// Wait for the FUSE mount to be ready (daemonize returns before mount is live)
-const cwd = `${MOUNT_POINT}/${org}/${repo}`;
-for (let i = 0; i < 30; i++) {
-  const check = await sandbox.process.executeCommand(`ls ${cwd} 2>/dev/null`);
-  if (check.exitCode === 0) break;
-  await new Promise((r) => setTimeout(r, 200));
-}
-
-console.log(`Connected to ${org}/${repo}. Type "exit" or Ctrl+C to quit.\n`);
-
-// --- REPL ---
-
-async function cleanup() {
-  console.log(dim("\nCleaning up sandbox..."));
-  await sandbox.delete();
-  console.log("Bye!");
-  process.exit(0);
-}
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-rl.on("close", cleanup);
-
-function prompt(): void {
-  rl.question("$ ", async (input) => {
-    const trimmed = input.trim();
-    if (!trimmed) return prompt();
-    if (trimmed === "exit") return cleanup();
-
-    try {
-      const result = await sandbox.process.executeCommand(trimmed, cwd);
-      if (result.result) process.stdout.write(result.result);
-      if (!result.result?.endsWith("\n")) process.stdout.write("\n");
-      if (result.exitCode !== 0) {
-        console.error(red(`[exit ${result.exitCode}]`));
-      }
-    } catch (err) {
-      console.error(
-        red("Error:"),
-        err instanceof Error ? err.message : err
-      );
+  // You can run mesa in daemon mode to kick it off in the background.
+  //
+  // The flags we are using here are:
+  //   -d, --daemonize       Spawns mesa in the background
+  // - y, --non - interactive Tells mesa to use the default values for all its configuration values.It will create a
+  //                        new config file for you.
+  //
+  // We also pass the environment variable:
+  //   MESA_ORGS = <org>: <api-key >,... Tells mesa to configure the given organization with the given API key.
+  //                                 Mesa will store this information in its configuration file.See
+  //                                 https://docs.mesa.dev/content/reference/mesa-cli-configuration for more details.
+  //
+  // Note that mesa will write the orgs to the config file the first time it is booted up, so you do not need to
+  // specify it again.When mesa is already configured, it will append the orgs given through the environment to the
+  // ones in the config.toml.
+  //
+  // Additionally, we recommend creating and specifying an ephemeral key which persists for the lifetime of the sandbox,
+  // rather than using the main API key.In the spirit of keeping this example small, we use the main API key.See
+  // https://docs.mesa.dev/content/getting-started/auth-and-permissions for more details.
+  console.log('Mounting Mesa...');
+  await sandbox.process.executeCommand(
+    'mesa mount -d -y',
+    undefined, // cwd
+    {
+      MESA_ORGS: `${ORG}:${MESA_API_KEY}`, // environment variables
     }
+  );
 
-    prompt();
-  });
+  // You can now explore repos in your org. We've written a tiny REPL here you can use to explore the sandbox.
+  //
+  // The default configuration is created in ~/.config/mesa/config.toml
+  // and your files will be in ~/.local/share/mesa/mnt/<org>/<repo>
+  await tinyDaytonaRepl(sandbox, { cwd: `~/.local/share/mesa/mnt/${ORG}` });
+} finally {
+  // No matter what happens, let's make sure we clean up the sandbox so we don't burn Daytona tokens!
+  console.log('\nCleaning up sandbox...');
+  await sandbox.delete();
 }
-
-prompt();

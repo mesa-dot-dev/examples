@@ -4,11 +4,11 @@
   "description": "Interactive shell over a Mesa cloud repo running in a Daytona sandbox",
   "type": "module",
   "scripts": {
-    "start": "tsx --env-file=../.env index.ts"
+    "start": "tsx index.ts"
   },
   "dependencies": {
     "@daytonaio/sdk": "^0.159.0",
-    "@mesadev/sdk": "^0.15.0"
+    "dotenv": "^17.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

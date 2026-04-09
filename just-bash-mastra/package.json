@@ -4,12 +4,13 @@
   "description": "AI agent (Mastra) with bash access to Mesa's cloud filesystem",
   "type": "module",
   "scripts": {
-    "start": "tsx --env-file=../.env index.ts"
+    "start": "tsx index.ts"
   },
   "dependencies": {
     "@mastra/core": "^1.15.0",
-    "@mesadev/sdk": "^0.15.0",
+    "@mesadev/sdk": "^0.20.0",
     "ai": "^5.0.0",
+    "dotenv": "^17.0.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {
