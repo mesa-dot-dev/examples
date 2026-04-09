@@ -4,7 +4,7 @@
   "description": "Interactive shell over a Mesa cloud repo running in a Runloop devbox",
   "type": "module",
   "dependencies": {
-    "@mesadev/sdk": "^0.15.0",
+    "@mesadev/sdk": "^0.20.0",
     "@runloop/api-client": "^1.17.0",
     "dotenv": "^17.4.1"
   },
