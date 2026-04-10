@@ -33,6 +33,8 @@ These examples mount Mesa repos inside cloud sandboxes using the Mesa CLI. The C
 | [daytona-shell](daytona-shell/) | Interactive shell in a Daytona sandbox (TypeScript) |
 | [daytona-python-shell](daytona-python-shell/) | Interactive shell in a Daytona sandbox (Python) |
 | [blaxel-shell](blaxel-shell/) | Interactive shell in a Blaxel sandbox |
+| [e2b-shell](e2b-shell/) | Interactive shell in an E2B sandbox |
+| [sprites-shell](sprites-shell/) | Interactive shell in a Sprites sandbox |
 
 ## Other
 
