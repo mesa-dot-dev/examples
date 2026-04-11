@@ -31,6 +31,7 @@ function question(rl: readline.Interface, prompt: string): Promise<string | null
 }
 
 interface LangChainAgent {
+  // biome-ignore lint/suspicious/noExplicitAny: LangGraph stream yields heterogeneous tuples whose shapes vary by mode
   stream(input: { messages: BaseMessage[] }, opts: { streamMode: StreamMode[] }): Promise<AsyncIterable<[string, any]>>;
 }
 
