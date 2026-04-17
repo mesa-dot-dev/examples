@@ -29,26 +29,13 @@ console.log('creating blaxel sandbox...');
 const sandbox = await SandboxInstance.create({ region: 'us-pdx-1' });
 
 try {
-  console.log('installing system dependencies...');
-  // Blaxel's base image is Alpine and very thin, so we need to install some system dependencies.
+  console.log('installing mesa...');
+  // Blaxel's base image is Alpine. The Mesa install script (https://mesa.dev/install.sh) handles
+  // Alpine natively — it detects the architecture, adds the correct APK repository, and installs mesa.
   // gcompat (not libc6-compat) is required because the Mesa daemon's gRPC connections deadlock under libc6-compat's musl shim.
   await sandbox.process.exec({
-    command: 'apk add --no-cache curl ca-certificates gcompat dpkg fuse3',
-    waitForCompletion: true,
-  });
-
-  console.log('installing mesa...');
-  // The Mesa CLI is distributed as a .deb package and the install script (https://mesa.dev/install.sh) currently requires apt.
-  // To work around this, we download the .deb and use dpkg-deb to extract the binary directly into the filesystem.
-  // Alternatively, you can build a custom Debian-based Blaxel template — see
-  // https://docs.mesa.dev/content/integration-guides/blaxel#debian-based-setup-custom-template
-  await sandbox.process.exec({
-    command: [
-      // Pin to a specific version; update when upgrading Mesa.
-      `curl -fsSL "https://packages.buildkite.com/mesa-dot-dev/debian-public/any/pool/any/main/m/mesa/mesa_0.20.0_amd64.deb" -o /tmp/mesa.deb`,
-      `dpkg-deb -x /tmp/mesa.deb /`,
-      `rm -f /tmp/mesa.deb`,
-    ].join(' && '),
+    command:
+      'apk add --no-cache curl ca-certificates gcompat fuse3 && curl -fsSL https://mesa.dev/install.sh | sh -s -- --yes',
     waitForCompletion: true,
   });
 

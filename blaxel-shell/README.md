@@ -2,7 +2,7 @@
 
 Interactive shell over repos in a [Mesa](https://mesa.dev) org running inside a [Blaxel](https://blaxel.ai) sandbox.
 
-Spins up a Blaxel sandbox, installs the Mesa CLI (working around Alpine's lack of apt), mounts your org's repos via FUSE, and drops you into a minimal shell.
+Spins up a Blaxel sandbox, installs the Mesa CLI via the install script, mounts your org's repos via FUSE, and drops you into a minimal shell.
 
 ## Quick start
 
@@ -34,13 +34,10 @@ Bye!
 ## How it works
 
 1. Creates a Blaxel sandbox (Alpine-based, runs as root)
-2. Installs Mesa CLI by extracting the `.deb` package directly (Alpine doesn't have apt)
+2. Installs system dependencies and the Mesa CLI via the install script (`mesa.dev/install.sh`), which detects Alpine and adds the correct APK repository
    - Uses `gcompat` instead of `libc6-compat` to avoid gRPC deadlocks
-3. Generates a scoped, short-lived API key for the sandbox
-4. Writes a Mesa config file and starts the FUSE daemon
-5. Waits for the mount to become ready, then drops you into a REPL
-
-The code includes a commented-out Dockerfile showing how to build a custom Debian-based Blaxel image that avoids the Alpine workarounds.
+3. Starts the Mesa FUSE daemon with your API key via `MESA_ORGS`
+4. Drops you into a minimal REPL at the mount path
 
 ## Environment variables
 

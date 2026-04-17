@@ -32,12 +32,16 @@ class Resource:
         DEPOT_MAX_REPO_NAME_LENGTH: float
         DEPOT_REPO_ROOT: str
         DEV: bool
+        SLACK_ALLOWED_OUTREACH_SENDER_IDS: str
         STAGE: str
         SUPPORT_EMAIL: str
         UPSTREAM_KMS_KEY_ARN: str
         VCS_HOST: str
         VCS_PORT: float
         VCS_URL: str
+        WAITLIST_COMPANIES_DATA_SOURCE_ID: str
+        WAITLIST_DEALS_DATA_SOURCE_ID: str
+        WAITLIST_SLACK_CHANNEL_ID: str
         type: str
     class DepotVPC:
         bastion: str
@@ -49,6 +53,9 @@ class Resource:
         type: str
         value: str
     class GRAFANA_KEY:
+        type: str
+        value: str
+    class NOTION_TOKEN:
         type: str
         value: str
     class PLANETSCALE_METRICS_TOKEN:
@@ -81,12 +88,30 @@ class Resource:
     class VCS_INTERNAL_SECRET:
         type: str
         value: str
+    class WAITLIST_GOOGLE_CLIENT_ID:
+        type: str
+        value: str
+    class WAITLIST_GOOGLE_CLIENT_SECRET:
+        type: str
+        value: str
+    class WAITLIST_GOOGLE_REFRESH_TOKEN:
+        type: str
+        value: str
+    class WAITLIST_SLACK_BOT_TOKEN:
+        type: str
+        value: str
+    class WAITLIST_SLACK_SIGNING_SECRET:
+        type: str
+        value: str
     class WWW:
         type: str
         url: str
     class Waitlist:
         name: str
         type: str
+    class WaitlistQueue:
+        type: str
+        url: str
     class Web:
         type: str
         url: str
