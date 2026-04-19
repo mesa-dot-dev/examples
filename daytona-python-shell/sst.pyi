@@ -109,9 +109,6 @@ class Resource:
     class Waitlist:
         name: str
         type: str
-    class WaitlistQueue:
-        type: str
-        url: str
     class Web:
         type: str
         url: str
