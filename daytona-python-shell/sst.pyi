@@ -32,10 +32,10 @@ class Resource:
         DEPOT_MAX_REPO_NAME_LENGTH: float
         DEPOT_REPO_ROOT: str
         DEV: bool
+        REMOTE_KMS_KEY_ARN: str
         SLACK_ALLOWED_OUTREACH_SENDER_IDS: str
         STAGE: str
         SUPPORT_EMAIL: str
-        UPSTREAM_KMS_KEY_ARN: str
         VCS_HOST: str
         VCS_PORT: float
         VCS_URL: str
