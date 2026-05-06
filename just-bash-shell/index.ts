@@ -38,6 +38,6 @@ const mesaFs = await mesa.fs.mount({
 });
 
 // `mesaFs.bash()` returns a bash instance that executes commands against the virtual filesystem.
-const bash = mesaFs.bash({ cwd: `/${ORG}/${REPO}` });
+const bash = mesaFs.bash({ cwd: `/${ORG}/${REPO}`, python: true });
 
 await tinyBashRepl(bash);

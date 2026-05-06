@@ -41,6 +41,7 @@ class Resource:
         VCS_URL: str
         WAITLIST_COMPANIES_DATA_SOURCE_ID: str
         WAITLIST_DEALS_DATA_SOURCE_ID: str
+        WAITLIST_SIGNUPS_DATA_SOURCE_ID: str
         WAITLIST_SLACK_CHANNEL_ID: str
         type: str
     class DepotVPC:
