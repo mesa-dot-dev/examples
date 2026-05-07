@@ -35,6 +35,7 @@ These examples mount Mesa repos inside cloud sandboxes using the Mesa CLI. The C
 | [blaxel-shell](blaxel-shell/) | Interactive shell in a Blaxel sandbox |
 | [e2b-shell](e2b-shell/) | Interactive shell in an E2B sandbox |
 | [sprites-shell](sprites-shell/) | Interactive shell in a Sprites sandbox |
+| [superserve-shell](superserve-shell/) | Interactive shell in a Superserve sandbox |
 
 ## Other
 
