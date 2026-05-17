@@ -19,6 +19,7 @@ These examples use the `@mesadev/sdk` to mount a Mesa repo as a virtual filesyst
 | Example | Description |
 |---------|-------------|
 | [just-bash-shell](just-bash-shell/) | Interactive bash REPL over a Mesa repo. No AI, just bash. |
+| [py-repl-app-mount](py-repl-app-mount/) | Interactive Python bash REPL over a Mesa repo using the Python SDK. |
 | [just-bash-ai-sdk](just-bash-ai-sdk/) | AI agent with bash access, built with the Vercel AI SDK |
 | [just-bash-mastra](just-bash-mastra/) | AI agent with bash access, built with Mastra |
 | [just-bash-langchain](just-bash-langchain/) | AI agent with bash access, built with LangChain |

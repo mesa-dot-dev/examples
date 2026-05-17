@@ -21,7 +21,7 @@ function question(rl: readline.Interface, prompt: string): Promise<string | null
 /**
  * Spawns an interactive REPL that runs bash commands against a Mesa virtual filesystem.
  */
-export default async function tinyBashRepl(bash: Bash): Promise<void> {
+export default async function tinyBashRepl(bash: Bash, onFinish: () => void): Promise<void> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -39,6 +39,8 @@ export default async function tinyBashRepl(bash: Bash): Promise<void> {
     if (trimmed === 'exit') break;
 
     const { stdout, stderr, exitCode } = await bash.exec(trimmed);
+
+    await onFinish();
 
     if (stdout) process.stdout.write(stdout);
     if (stderr) process.stderr.write(stderr);

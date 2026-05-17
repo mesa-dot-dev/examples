@@ -34,10 +34,14 @@ const mesa = new Mesa();
 console.log(`Connecting to ${ORG}/${REPO} via Mesa...`);
 const mesaFs = await mesa.fs.mount({
   repos: [{ name: REPO, bookmark: 'main' }],
-  mode: 'rw',
+  mode: 'ro',
 });
+
+const newChange = await mesaFs.change.new({ repo: REPO, bookmark: 'main' });
 
 // `mesaFs.bash()` returns a bash instance that executes commands against the virtual filesystem.
 const bash = mesaFs.bash({ cwd: `/${ORG}/${REPO}`, python: true });
 
-await tinyBashRepl(bash);
+await tinyBashRepl(bash, async () => {
+  await mesaFs.bookmark.move({ repo: REPO, name: 'main', changeId: newChange.changeOid });
+});
