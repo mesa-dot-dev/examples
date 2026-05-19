@@ -4,7 +4,8 @@
   "description": "Interactive shell over a Mesa cloud repo running in a Sprites sandbox",
   "type": "module",
   "scripts": {
-    "start": "tsx index.ts"
+    "start": "tsx index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@fly/sprites": "^0.0.1",

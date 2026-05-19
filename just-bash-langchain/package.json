@@ -4,7 +4,8 @@
   "description": "AI agent (LangChain) with bash access to Mesa's cloud filesystem",
   "type": "module",
   "scripts": {
-    "start": "tsx index.ts"
+    "start": "tsx index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@langchain/anthropic": "^1.0.0",

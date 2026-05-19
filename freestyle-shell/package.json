@@ -1,10 +1,11 @@
 {
-  "name": "e2b-shell",
+  "name": "freestyle-shell",
   "version": "0.1.0",
-  "description": "Interactive shell over a Mesa cloud repo running in an E2B sandbox",
+  "description": "Interactive shell over a Mesa cloud repo running in a Freestyle sandbox",
   "type": "module",
   "scripts": {
-    "start": "tsx index.ts"
+    "start": "tsx index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "dotenv": "^17.0.0",

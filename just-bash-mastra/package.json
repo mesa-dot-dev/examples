@@ -4,7 +4,8 @@
   "description": "AI agent (Mastra) with bash access to Mesa's cloud filesystem",
   "type": "module",
   "scripts": {
-    "start": "tsx index.ts"
+    "start": "tsx index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@mastra/core": "^1.15.0",

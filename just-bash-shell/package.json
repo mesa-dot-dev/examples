@@ -4,7 +4,8 @@
   "description": "Interactive bash shell over a Mesa cloud repo — no AI, just bash",
   "type": "module",
   "scripts": {
-    "start": "tsx index.ts"
+    "start": "tsx index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@mesadev/sdk": "^0.29.1",

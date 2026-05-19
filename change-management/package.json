@@ -4,7 +4,8 @@
   "description": "Creates a Mesa repo with three changes (a, b, c), then lets you pick one to mount and explore via bash",
   "type": "module",
   "scripts": {
-    "start": "tsx index.ts"
+    "start": "tsx index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@mesadev/sdk": "^0.20.0",
