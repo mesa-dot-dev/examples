@@ -47,6 +47,9 @@ class Resource:
     class DepotVPC:
         bastion: str
         type: str
+    class GIT_SYNC_SERVICE_KEY:
+        type: str
+        value: str
     class GOOGLE_CLIENT_ID:
         type: str
         value: str
@@ -56,6 +59,13 @@ class Resource:
     class GRAFANA_KEY:
         type: str
         value: str
+    class GitSync:
+        service: str
+        type: str
+    class Mpman:
+        service: str
+        type: str
+        url: str
     class NOTION_TOKEN:
         type: str
         value: str
@@ -75,6 +85,12 @@ class Resource:
     class SYSTEM_ORG_API_KEY:
         type: str
         value: str
+    class SyncDeadLetterQueue:
+        type: str
+        url: str
+    class SyncQueue:
+        type: str
+        url: str
     class SystemOrg:
         name: str
         slug: str
