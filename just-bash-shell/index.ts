@@ -34,7 +34,6 @@ const mesa = new Mesa();
 console.log(`Connecting to ${ORG}/${REPO} via Mesa...`);
 const mesaFs = await mesa.fs.mount({
   repos: [{ name: REPO, bookmark: 'main' }],
-  mode: 'ro',
 });
 
 const newChange = await mesaFs.change.new({ repo: REPO, bookmark: 'main' });

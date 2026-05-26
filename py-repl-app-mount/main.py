@@ -39,7 +39,6 @@ async def main() -> None:
         print(f"Connecting to {org}/{repo} via Mesa...")
         async with mesa.fs.mount(
             repos=[RepoConfig(repo, bookmark="main")],
-            mode="rw",
         ) as mesa_fs:
             new_change_id: str = await mesa_fs.changes.new(repo, bookmark="main")
 
