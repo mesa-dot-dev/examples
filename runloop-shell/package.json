@@ -4,11 +4,11 @@
   "description": "Interactive shell over a Mesa cloud repo running in a Runloop devbox",
   "type": "module",
   "scripts": {
+    "start": "tsx index.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@mesadev/sdk": "^0.20.0",
-    "@runloop/api-client": "^1.17.0",
+    "@runloop/api-client": "^1.22.1",
     "dotenv": "^17.4.1"
   },
   "devDependencies": {
