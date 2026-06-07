@@ -17,8 +17,8 @@ FUSE + Claude Code.
 cd packages/examples/realtime-nextjs
 cp .env.example .env.local
 # Fill in all values in .env.local
-pnpm install
-pnpm run dev
+npm install
+npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). The sandbox may take a bit to provision.
