@@ -43,3 +43,4 @@ These examples mount Mesa repos inside cloud sandboxes using the Mesa CLI. The C
 | Example | Description |
 |---------|-------------|
 | [change-management](change-management/) | Create changes and bookmarks programmatically |
+| [realtime-nextjs](realtime-nextjs/) | Live browser editor and sandbox terminal using MesaFS realtime events |
