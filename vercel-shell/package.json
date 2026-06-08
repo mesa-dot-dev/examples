@@ -1,0 +1,19 @@
+{
+  "name": "vercel-shell",
+  "version": "0.1.0",
+  "description": "Interactive shell over a Mesa cloud repo running in a Vercel sandbox",
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@vercel/sandbox": "^2.1.0",
+    "dotenv": "^17.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^6.0.3"
+  }
+}
