@@ -44,7 +44,7 @@ Bye!
 1. Creates a Daytona sandbox (default image)
 2. Installs the [Mesa CLI](https://docs.mesa.dev/content/virtual-filesystem/os-level) inside the sandbox
 3. Configures FUSE (`user_allow_other`) so Mesa can serve the mount
-4. Runs `mesa mount -d -y` with your org and API key to start the FUSE daemon
+4. Mints a short-lived access token from your API key (outside the sandbox) and runs `mesa mount -d -y` with your org and that token to start the FUSE daemon — your long-lived API key never enters the sandbox
 5. Drops you into a REPL where commands run inside the sandbox via `sandbox.process.exec()`
 
 The REPL (`repl.py`) tracks your working directory and handles `cd`, `~` expansion, and relative paths.

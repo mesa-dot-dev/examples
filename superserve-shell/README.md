@@ -35,10 +35,11 @@ Cleaning up sandbox...
 
 ## How it works
 
-1. Creates a Superserve sandbox from the default `superserve/base` template
-2. Installs the [Mesa CLI](https://docs.mesa.dev/content/virtual-filesystem/os-level) inside the sandbox
-3. Runs `mesa mount -d -y` with your org and API key to start the FUSE daemon
-4. Drops you into a REPL where commands run inside the sandbox via `sandbox.commands.run()`
+1. Mints a scoped, short-lived access token from your API key (signed locally; the API key never enters the sandbox)
+2. Creates a Superserve sandbox from the default `superserve/base` template
+3. Installs the [Mesa CLI](https://docs.mesa.dev/content/virtual-filesystem/os-level) inside the sandbox
+4. Runs `mesa mount -d -y` with your org and the short-lived token to start the FUSE daemon
+5. Drops you into a REPL where commands run inside the sandbox via `sandbox.commands.run()`
 
 Superserve sandboxes are full Firecracker microVMs running as root with a FUSE-enabled kernel, so the `user_allow_other` and `chmod 666 /dev/fuse` steps that other sandbox providers require aren't needed.
 

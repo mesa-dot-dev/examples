@@ -10,6 +10,7 @@
 
 import 'dotenv/config';
 import { Sandbox } from 'e2b';
+import { Mesa } from '@mesadev/sdk';
 import tinyE2bRepl from './repl.ts';
 
 const ORG =
@@ -25,6 +26,19 @@ const MESA_API_KEY =
 if (!process.env.E2B_API_KEY) {
   throw Error('$E2B_API_KEY not set.');
 }
+
+// Mint a short-lived access token OUTSIDE the sandbox, where your API key lives.
+// Only this token is injected into the sandbox below — your long-lived API key
+// never crosses the boundary. Signing is local (no network round-trip) and the
+// token expires on its own, so a compromised sandbox leaks at most a
+// soon-to-expire, narrowly-scoped credential.
+const mesa = new Mesa({ apiKey: MESA_API_KEY, org: ORG });
+const { token } = await mesa.tokens.create({
+  scopes: ['read', 'write'],
+  // Optionally restrict the token to specific repos (full `org/repo` names):
+  //   repos: [`${ORG}/my-repo`],
+  ttl_seconds: 60 * 60, // 1 hour (max 24h). The mount lasts exactly this long.
+});
 
 console.log('Creating E2B sandbox...');
 const sandbox = await Sandbox.create();
@@ -62,22 +76,21 @@ try {
   //   -y, --non-interactive  Tells mesa to use the default values for all its configuration values. It will create a
   //                          new config file for you.
   //
-  // We also pass the environment variable:
-  //   MESA_ORGS=<org>:<api-key>,... Tells mesa to configure the given organization with the given API key.
-  //                                 Mesa will store this information in its configuration file. See
-  //                                 https://docs.mesa.dev/content/reference/mesa-cli-configuration for more details.
+  // We pass two environment variables:
+  //   MESA_ORG       tells mesa which organization to add to config.toml.
+  //   MESA_API_KEY   provides the credential for this process. It accepts an
+  //                  API key OR an access token; here we pass the short-lived
+  //                  token we minted above, so the raw API key never enters the
+  //                  sandbox. See
+  //                  https://docs.mesa.dev/content/reference/mesa-cli-configuration.
   //
-  // Note that mesa will write the orgs to the config file the first time it is booted up, so you do not need to
-  // specify it again. When mesa is already configured, it will append the orgs given through the environment to the
-  // ones in the config.toml.
-  //
-  // Additionally, we recommend creating and specifying an ephemeral key which persists for the lifetime of the sandbox,
-  // rather than using the main API key. In the spirit of keeping this example small, we use the main API key. See
-  // https://docs.mesa.dev/content/getting-started/auth-and-permissions for more details.
+  // Mesa writes only the organization to config.toml on first boot; the token
+  // is read from the environment and is never persisted to disk.
   console.log(`Mounting ${ORG}...`);
   await sandbox.commands.run('mesa mount -d -y', {
     envs: {
-      MESA_ORGS: `${ORG}:${MESA_API_KEY}`,
+      MESA_ORG: ORG,
+      MESA_API_KEY: token, // the short-lived token, NOT the raw API key
     },
   });
 

@@ -11,6 +11,7 @@
 
 import 'dotenv/config';
 import { SandboxInstance } from '@blaxel/core';
+import { Mesa } from '@mesadev/sdk';
 import tinyBlaxelRepl from './repl.ts';
 
 const ORG =
@@ -23,6 +24,19 @@ const MESA_API_KEY =
   (() => {
     throw Error('$MESA_API_KEY not set.');
   })();
+
+// Mint a short-lived access token OUTSIDE the sandbox, where your API key lives.
+// Only this token is injected into the sandbox below — your long-lived API key
+// never crosses the boundary. Signing is local (no network round-trip) and the
+// token expires on its own, so a compromised sandbox leaks at most a
+// soon-to-expire, narrowly-scoped credential.
+const mesa = new Mesa({ apiKey: MESA_API_KEY, org: ORG });
+const { token } = await mesa.tokens.create({
+  scopes: ['read', 'write'],
+  // Optionally restrict the token to specific repos (full `org/repo` names):
+  //   repos: [`${ORG}/my-repo`],
+  ttl_seconds: 60 * 60, // 1 hour (max 24h). The mount lasts exactly this long.
+});
 
 console.log('creating blaxel sandbox...');
 
@@ -39,8 +53,19 @@ try {
     waitForCompletion: true,
   });
 
+  // We pass two environment variables:
+  //   MESA_ORG       tells mesa which organization to add to config.toml.
+  //   MESA_API_KEY   provides the credential for this process. It accepts an
+  //                  API key OR an access token; here we pass the short-lived
+  //                  token we minted above, so the raw API key never enters the
+  //                  sandbox. The token is read from the environment and is
+  //                  never persisted to disk.
   console.log('mounting mesa...');
-  await sandbox.process.exec({ command: `MESA_ORGS=${ORG}:${MESA_API_KEY} mesa mount -d -y`, waitForCompletion: true });
+  await sandbox.process.exec({
+    // MESA_API_KEY is set to the short-lived token, NOT the raw API key.
+    command: `MESA_ORG=${ORG} MESA_API_KEY=${token} mesa mount -d -y`,
+    waitForCompletion: true,
+  });
 
   // You can now explore repos in your org. We've written a tiny REPL here you can use to explore the container.
   //

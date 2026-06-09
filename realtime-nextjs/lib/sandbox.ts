@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { Daytona, type PtyHandle, type Sandbox } from '@daytonaio/sdk';
+import { Mesa } from '@mesadev/sdk';
 import { ANTHROPIC_API_KEY, MESA_ORG, MESA_REPO } from './env';
 import type { SandboxStatus } from './events';
 
@@ -32,6 +33,16 @@ export function getSandboxStatus() {
 export async function ensureSandbox(mesaApiKey: string): Promise<void> {
   if (state.sandbox) return;
   state.initPromise ??= (async () => {
+    // Mint a short-lived, repo-scoped access token from the API key here on the
+    // host. Only this token is injected into the sandbox below — the raw API key
+    // never crosses the boundary.
+    const mesa = new Mesa({ apiKey: mesaApiKey, org: MESA_ORG });
+    const { token } = await mesa.tokens.create({
+      scopes: ['read', 'write'],
+      repos: [`${MESA_ORG}/${MESA_REPO}`],
+      ttl_seconds: 60 * 60,
+    });
+
     console.log('[sandbox] Creating Daytona sandbox...');
     const daytona = new Daytona();
     const sandbox = await daytona.create({
@@ -67,8 +78,9 @@ export async function ensureSandbox(mesaApiKey: string): Promise<void> {
       await sandbox.process.executeCommand('curl -fsSL https://mesa.dev/install.sh | sh');
       await sandbox.process.executeCommand("sudo sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf");
 
-      // Mount Mesa and switch to the main bookmark
-      await sandbox.process.executeCommand('mesa mount -d -y', undefined, { MESA_ORGS: `${MESA_ORG}:${mesaApiKey}` });
+      // Mount Mesa and switch to the main bookmark. MESA_API_KEY accepts an API
+      // key or an access token; we pass the short-lived token minted above.
+      await sandbox.process.executeCommand('mesa mount -d -y', undefined, { MESA_ORG, MESA_API_KEY: token });
       await sandbox.process.executeCommand('mesa edit main', REPO_PATH);
 
       state.sandbox = sandbox;

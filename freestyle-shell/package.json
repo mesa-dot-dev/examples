@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@mesadev/sdk": "^0.35.0",
     "dotenv": "^17.0.0",
     "freestyle": "^0.1.46"
   },
