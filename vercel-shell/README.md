@@ -44,7 +44,7 @@ Bye!
 | Variable | Description |
 |----------|-------------|
 | `MESA_ORG` | Your Mesa organization slug |
-| `MESA_API_KEY` | Mesa API key ([get one here](https://mesa.dev)) |
+| `MESA_API_KEY` | Mesa API key with at least `write` scope ([get one here](https://mesa.dev)) — the short-lived token minted for the sandbox cannot exceed the key's scopes |
 | `VERCEL_TEAM_ID` | Vercel team ID ([get one here](https://vercel.com/)) |
 | `VERCEL_PROJECT_ID` | Vercel project ID ([get one here](https://vercel.com/)) |
 | `VERCEL_TOKEN` | Vercel token ([get one here](https://vercel.com/)) |

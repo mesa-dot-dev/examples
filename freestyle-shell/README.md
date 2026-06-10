@@ -45,7 +45,7 @@ Bye!
 | Variable | Description |
 |----------|-------------|
 | `MESA_ORG` | Your Mesa organization slug |
-| `MESA_API_KEY` | Mesa API key ([get one here](https://mesa.dev)) |
+| `MESA_API_KEY` | Mesa API key with at least `write` scope ([get one here](https://mesa.dev)) — the short-lived token minted for the sandbox cannot exceed the key's scopes |
 | `FREESTYLE_API_KEY` | Freestyle API key ([get one here](https://freestyle.sh)) |
 
 ## Requirements

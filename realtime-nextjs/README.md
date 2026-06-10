@@ -35,7 +35,7 @@ Open [http://localhost:3000](http://localhost:3000). The sandbox may take a bit 
 
 | Variable | Required | Description |
 |---|---|---|
-| `MESA_API_KEY` | Yes | Mesa API key with admin scope |
+| `MESA_API_KEY` | Yes | Mesa API key with at least `write` scope — the short-lived token minted for the sandbox cannot exceed the key's scopes |
 | `MESA_ORG` | Yes | Mesa organization name |
 | `MESA_REPO` | Yes | Name of an existing repo in your org |
 | `DAYTONA_API_KEY` | Yes | Daytona API key for sandbox creation |

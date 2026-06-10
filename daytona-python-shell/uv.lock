@@ -351,7 +351,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "daytona", specifier = ">=0.183.0" },
-    { name = "mesa-sdk", specifier = ">=0.35.0" },
+    { name = "mesa-sdk", specifier = ">=0.36.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
 ]
 
@@ -606,18 +606,18 @@ wheels = [
 
 [[package]]
 name = "mesa-sdk"
-version = "0.35.0"
+version = "0.36.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "mesa-rest" },
     { name = "pydantic" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0a/49/82f605def8a28eea8cbb25fe6982b65f9170f0538e90759fbdb6f1a86df5/mesa_sdk-0.35.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:ba730e09d67a6d809c4776cdf63a454910f572ecaadebe3213a23bc0d4677e69", size = 10860308, upload-time = "2026-06-08T16:28:01.774Z" },
-    { url = "https://files.pythonhosted.org/packages/49/91/2a9d17033bd91fed3b0ad0aa802d855e8c03246aac69e4e914a90f86ec81/mesa_sdk-0.35.0-cp310-abi3-manylinux_2_34_aarch64.whl", hash = "sha256:ce2d38446ea42df96ccde30fb1511fcf0787188bd1fbf335c8ae743bf91b8c64", size = 11890736, upload-time = "2026-06-08T16:27:59.83Z" },
-    { url = "https://files.pythonhosted.org/packages/db/96/b762b2795ec89bedf89e5a33036aa44c28f62dce9ad779cdf80aeffc441f/mesa_sdk-0.35.0-cp310-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:8507f3a044171dfa8d045f365604fe9cbd23a89b48967a0452541205f43671fe", size = 12228348, upload-time = "2026-06-08T16:27:57.967Z" },
-    { url = "https://files.pythonhosted.org/packages/2d/57/5732b36e179046952a659d01565336425cb7f0af93b8f1fc16a10c508848/mesa_sdk-0.35.0-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:f65d824b233c5733269453f6d225be181716e39935a5b40a589059569ff266a4", size = 12060802, upload-time = "2026-06-08T16:28:04.791Z" },
-    { url = "https://files.pythonhosted.org/packages/02/ed/d220c98e467c74c4d0c10f82f954fe34b712c64767a509a0da7ac8109bed/mesa_sdk-0.35.0-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:f395e0cf86c697ba3498af43092a07dd8363ea5b9cf2f573fc4eb6acad413dcf", size = 12355200, upload-time = "2026-06-08T16:27:55.86Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/0d/45fed85dd2382ee676779ceedbd15a25c2258dc26750226dff211f033f3c/mesa_sdk-0.36.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:b510628163c976f2b578a7fd00741de5c76b427b0299e34147e96482beba8304", size = 10976968, upload-time = "2026-06-09T20:13:01.21Z" },
+    { url = "https://files.pythonhosted.org/packages/fa/8a/799ee329ace138b0a4c4bb19f756e942f38909ed209d1a03121d1252b57d/mesa_sdk-0.36.0-cp310-abi3-manylinux_2_34_aarch64.whl", hash = "sha256:d219f4c158bc9e500ce115e71de9603bdaf28f57b63bca4cd36e6b9bafae3632", size = 12020585, upload-time = "2026-06-09T20:12:55.081Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/5f/9fb3c71c022e94e8889bdfe1d9dd81b4458b65ce0f8754d72078549355e2/mesa_sdk-0.36.0-cp310-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:2d6242c63692a4f8541b09683c2688430a749eaa1c545f28f2171c0e26ba3b5e", size = 12376583, upload-time = "2026-06-09T20:12:59.203Z" },
+    { url = "https://files.pythonhosted.org/packages/23/13/18c0b958a3a007ab688107c09f19b4058d3331c3b7b2d3922e7e68de44c3/mesa_sdk-0.36.0-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:c5f2336001914df51b874da07f102896c4361599f1b16a04138bbb6558b76688", size = 12195997, upload-time = "2026-06-09T20:12:57.215Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/da/addbb4568af3ecabac7b8c838034191f3261b71aad487e37bd60dfbc97de/mesa_sdk-0.36.0-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:fc7f4fc47932b202a362191cf48f0d86b3e9b53865efb1e14a11b33bd93287f7", size = 12507408, upload-time = "2026-06-09T20:13:03.38Z" },
 ]
 
 [[package]]

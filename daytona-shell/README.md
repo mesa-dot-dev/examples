@@ -39,7 +39,7 @@ Bye!
 
 1. Builds a custom Docker image with Mesa CLI and FUSE pre-installed
 2. Creates a Daytona sandbox from that image
-3. Generates a scoped, short-lived API key for the sandbox (recommended over using your main key)
+3. Mints a scoped, short-lived access token from your API key (outside the sandbox) — your long-lived API key never enters the sandbox
 4. Writes a Mesa config file and starts the FUSE daemon (`mesa mount --daemonize`)
 5. Waits for the mount to become ready, then drops you into a REPL
 
@@ -48,7 +48,7 @@ Bye!
 | Variable | Description |
 |----------|-------------|
 | `MESA_ORG` | Your Mesa organization slug |
-| `MESA_API_KEY` | Mesa API key ([get one here](https://mesa.dev)) |
+| `MESA_API_KEY` | Mesa API key with at least `write` scope ([get one here](https://mesa.dev)) — the short-lived token minted for the sandbox cannot exceed the key's scopes |
 | `DAYTONA_API_KEY` | Daytona API key ([get one here](https://app.daytona.io)) |
 
 ## Requirements
