@@ -31,7 +31,7 @@ export async function ensureDemoSession(): Promise<void> {
   store.initPromise ??= (async () => {
     const mesa = new Mesa();
     const fs = await mesa.fs.mount({
-      repos: [{ name: MESA_REPO, bookmark: 'main' }],
+      repos: [{ name: MESA_REPO, at: { bookmark: 'main' } }],
     });
     await fs.change.edit({ repo: MESA_REPO, bookmark: 'main' });
 

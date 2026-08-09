@@ -36,7 +36,7 @@ console.log(`Connecting to ${ORG}/${REPO} via Mesa...`);
 
 const mesa = new Mesa();
 const mesaFs = await mesa.fs.mount({
-  repos: [{ name: REPO, bookmark: 'main' }],
+  repos: [{ name: REPO, at: { bookmark: 'main' } }],
 });
 
 const bash = mesaFs.bash({ cwd: `/${ORG}/${REPO}` });

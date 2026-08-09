@@ -33,7 +33,7 @@ const mesa = new Mesa();
 // no cloning, no sandbox required.
 console.log(`Connecting to ${ORG}/${REPO} via Mesa...`);
 const mesaFs = await mesa.fs.mount({
-  repos: [{ name: REPO, bookmark: 'main' }],
+  repos: [{ name: REPO, at: { bookmark: 'main' } }],
 });
 
 const newChange = await mesaFs.change.new({ repo: REPO, bookmark: 'main' });

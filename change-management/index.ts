@@ -27,7 +27,7 @@ await mesa.repos.create({ name: repo });
 try {
   // Mount the repo's virtual filesystem in read-write mode.
   const fs = await mesa.fs.mount({
-    repos: [{ name: repo, bookmark: 'main' }],
+    repos: [{ name: repo, at: { bookmark: 'main' } }],
   });
 
   // Changes are Mesa's unit of work — like lightweight branches that track file modifications.

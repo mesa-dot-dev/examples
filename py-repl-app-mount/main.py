@@ -38,7 +38,7 @@ async def main() -> None:
         # Mesa's cloud storage, with no clone or sandbox required.
         print(f"Connecting to {org}/{repo} via Mesa...")
         async with mesa.fs.mount(
-            repos=[RepoConfig(repo, bookmark="main")],
+            repos=[RepoConfig(repo, at={"bookmark": "main"})],
         ) as mesa_fs:
             new_change_id: str = await mesa_fs.changes.new(repo, bookmark="main")
 
