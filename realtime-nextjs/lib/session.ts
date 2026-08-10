@@ -1,5 +1,5 @@
 import { Mesa, type MesaFileSystem, type MesaFileSystemSubscription, type WatchEvent } from '@mesadev/sdk';
-import { MESA_API_KEY, MESA_ORG, MESA_REPO } from './env';
+import { MESA_ORG, MESA_PRIVATE_KEY, MESA_REPO } from './env';
 import type { ServerEvent } from './events';
 import { ensureSandbox } from './sandbox';
 
@@ -29,9 +29,10 @@ const store = (globalThis.__mesaSession ??= {
 export async function ensureDemoSession(): Promise<void> {
   if (store.fs) return;
   store.initPromise ??= (async () => {
-    const mesa = new Mesa();
+    const mesa = new Mesa({ privateKey: MESA_PRIVATE_KEY });
     const fs = await mesa.fs.mount({
-      repos: [{ name: MESA_REPO, at: { bookmark: 'main' } }],
+      authors: [{ name: 'Realtime App', email: 'realtime@example.com' }],
+      repos: [{ name: MESA_REPO, bookmark: 'main' }],
     });
     await fs.change.edit({ repo: MESA_REPO, bookmark: 'main' });
 
@@ -43,7 +44,7 @@ export async function ensureDemoSession(): Promise<void> {
 
     store.fs = fs;
     store.subscription = subscription;
-    await ensureSandbox(MESA_API_KEY);
+    await ensureSandbox(MESA_PRIVATE_KEY);
   })();
   await store.initPromise;
 }

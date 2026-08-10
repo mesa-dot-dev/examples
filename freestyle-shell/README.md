@@ -1,4 +1,4 @@
-# e2b-shell
+# freestyle-shell
 
 Interactive shell over repos in a [Mesa](https://mesa.dev) org running inside a [Freestyle](https://freestyle.sh) sandbox, written in TypeScript.
 
@@ -37,7 +37,7 @@ Bye!
 
 1. Creates a Freestyle sandbox with a 1-hour timeout
 2. Installs Mesa CLI and FUSE inside the sandbox
-3. Starts the FUSE daemon (`mesa mount --daemonize`) with your org credentials
+3. Starts the FUSE daemon (`mesa mount --daemonize`) with your org and a short-lived access token
 4. Drops you into a REPL rooted at the mounted org directory
 
 ## Environment variables
@@ -45,11 +45,11 @@ Bye!
 | Variable | Description |
 |----------|-------------|
 | `MESA_ORG` | Your Mesa organization slug |
-| `MESA_API_KEY` | Mesa API key with at least `write` scope ([get one here](https://mesa.dev)) — the short-lived token minted for the sandbox cannot exceed the key's scopes |
+| `MESA_PRIVATE_KEY` | Mesa signing private key stored only in the trusted host process |
 | `FREESTYLE_API_KEY` | Freestyle API key ([get one here](https://freestyle.sh)) |
 
 ## Requirements
 
 - Node.js >= 18
-- Mesa account with an API key
+- Mesa account with a signing key
 - Freestyle account with an API key

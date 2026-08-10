@@ -1,6 +1,6 @@
 import path from 'node:path';
 import * as readline from 'node:readline';
-import type { Sandbox } from '@daytonaio/sdk';
+import type { Sandbox } from '@daytona/sdk';
 
 /**
  * Options parameter for the @see tinyDaytonaRepl function.

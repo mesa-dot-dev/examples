@@ -38,9 +38,9 @@ shutting down devbox...
 ## How it works
 
 1. Creates a Runloop devbox
-2. Installs the [Mesa CLI](https://docs.mesa.dev/content/virtual-filesystem/os-level) inside the devbox
+2. Installs the [Mesa CLI](https://docs.mesa.dev/content/mesafs/posix-mount) inside the devbox
 3. Configures FUSE (`user_allow_other`) and `/dev/fuse` permissions so Mesa can serve the mount
-4. Mints a short-lived access token from your API key (outside the devbox) and runs `mesa mount -d -y` with your org and that token to start the FUSE daemon — your long-lived API key never enters the devbox
+4. Mints a short-lived access token from your signing private key (outside the devbox) and runs `mesa mount -d` with your org and that token to start the FUSE daemon — your private key never enters the devbox
 5. Drops you into a REPL where commands run inside the devbox via `devbox.cmd.exec()`
 
 The REPL (`tiny-runloop-repl.ts`) tracks your working directory and handles `cd`, `~` expansion, and relative paths.
@@ -57,11 +57,11 @@ The REPL (`tiny-runloop-repl.ts`) tracks your working directory and handles `cd`
 | Variable | Description |
 |----------|-------------|
 | `MESA_ORG` | Your Mesa organization slug |
-| `MESA_API_KEY` | Mesa API key with at least `write` scope ([get one here](https://mesa.dev)) — the short-lived token minted for the sandbox cannot exceed the key's scopes |
+| `MESA_PRIVATE_KEY` | Mesa signing private key stored only in the trusted host process |
 | `RUNLOOP_API_KEY` | Runloop API key ([get one here](https://runloop.ai)) |
 
 ## Requirements
 
 - Node.js >= 18
-- Mesa account with an API key
+- Mesa account with a signing key
 - Runloop account with an API key

@@ -14,7 +14,7 @@ FUSE + Claude Code.
 ## Quick start
 
 ```bash
-cd packages/examples/realtime-nextjs
+cd examples/realtime-nextjs
 cp .env.example .env.local
 # Fill in all values in .env.local
 npm install
@@ -35,7 +35,7 @@ Open [http://localhost:3000](http://localhost:3000). The sandbox may take a bit 
 
 | Variable | Required | Description |
 |---|---|---|
-| `MESA_API_KEY` | Yes | Mesa API key with at least `write` scope — the short-lived token minted for the sandbox cannot exceed the key's scopes |
+| `MESA_PRIVATE_KEY` | Yes | Mesa signing private key stored only in the trusted host process |
 | `MESA_ORG` | Yes | Mesa organization name |
 | `MESA_REPO` | Yes | Name of an existing repo in your org |
 | `DAYTONA_API_KEY` | Yes | Daytona API key for sandbox creation |
@@ -61,6 +61,6 @@ The sandbox terminal starts in:
 ## Requirements
 
 - Node.js 20+
-- [Mesa](https://mesa.dev) account + API key
+- [Mesa](https://mesa.dev) account + signing key
 - [Daytona](https://daytona.io) account + API key
 - An existing repo in your Mesa org

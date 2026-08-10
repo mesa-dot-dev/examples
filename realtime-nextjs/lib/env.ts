@@ -2,10 +2,10 @@ import { config } from 'dotenv';
 
 config({ path: ['.env.local', '.env'], quiet: true });
 
-export const MESA_API_KEY =
-  process.env.MESA_API_KEY ??
+export const MESA_PRIVATE_KEY =
+  process.env.MESA_PRIVATE_KEY ??
   (() => {
-    throw Error('$MESA_API_KEY not set.');
+    throw Error('$MESA_PRIVATE_KEY not set.');
   })();
 
 export const MESA_ORG =

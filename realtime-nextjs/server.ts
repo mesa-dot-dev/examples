@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { parse } from 'node:url';
-import type { PtyHandle } from '@daytonaio/sdk';
+import type { PtyHandle } from '@daytona/sdk';
 import next from 'next';
 import { WebSocket, WebSocketServer } from 'ws';
 import { createSandboxPty, destroySandbox } from './lib/sandbox';

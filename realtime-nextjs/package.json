@@ -10,8 +10,8 @@
     "start": "NODE_ENV=production tsx server.ts"
   },
   "dependencies": {
-    "@daytonaio/sdk": "^0.180.0",
-    "@mesadev/sdk": "^0.36.0",
+    "@daytona/sdk": "^0.200.1",
+    "@mesadev/sdk": "^0.44.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "dotenv": "^17.4.2",

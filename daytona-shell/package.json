@@ -8,8 +8,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@daytonaio/sdk": "^0.183.0",
-    "@mesadev/sdk": "^0.36.0",
+    "@daytona/sdk": "^0.200.1",
+    "@mesadev/sdk": "^0.44.0",
     "dotenv": "^17.0.0"
   },
   "devDependencies": {

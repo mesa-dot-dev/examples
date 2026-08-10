@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // To run this example, create a .env file in this directory with:
-//   MESA_API_KEY=your-mesa-key
+//   MESA_PRIVATE_KEY=your-signing-private-key
 //
 // Then run:
 //   npm start
@@ -13,11 +13,11 @@ import 'dotenv/config';
 import { randomBytes } from 'node:crypto';
 import { Mesa } from '@mesadev/sdk';
 
-if (!process.env.MESA_API_KEY) {
-  throw Error('$MESA_API_KEY not set.');
+if (!process.env.MESA_PRIVATE_KEY) {
+  throw Error('$MESA_PRIVATE_KEY not set.');
 }
 
-const mesa = new Mesa();
+const mesa = new Mesa({ privateKey: process.env.MESA_PRIVATE_KEY });
 const org = await mesa.resolveOrg();
 const repo = `change-mgmt-example-${randomBytes(4).toString('hex')}`;
 
@@ -27,7 +27,8 @@ await mesa.repos.create({ name: repo });
 try {
   // Mount the repo's virtual filesystem in read-write mode.
   const fs = await mesa.fs.mount({
-    repos: [{ name: repo, at: { bookmark: 'main' } }],
+    authors: [{ name: 'App Agent', email: 'agent@example.com' }],
+    repos: [{ name: repo, bookmark: 'main' }],
   });
 
   // Changes are Mesa's unit of work — like lightweight branches that track file modifications.

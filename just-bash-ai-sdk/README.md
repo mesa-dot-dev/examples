@@ -45,11 +45,11 @@ This project is written in TypeScript.
 |----------|-------------|
 | `MESA_ORG` | Your Mesa organization slug |
 | `MESA_REPO` | The repository to mount |
-| `MESA_API_KEY` | Mesa API key ([get one here](https://mesa.dev)) |
+| `MESA_PRIVATE_KEY` | Mesa signing private key |
 | `ANTHROPIC_API_KEY` | Anthropic API key ([get one here](https://console.anthropic.com)) |
 
 ## Requirements
 
 - Node.js >= 18
-- Mesa account with an API key
+- Mesa account with a signing key
 - Anthropic API key

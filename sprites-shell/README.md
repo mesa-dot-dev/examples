@@ -21,7 +21,7 @@ npm start
 ```
 Starting sprite...
 Mounting your-org...
-Connected to /mnt/mesa/your-org. Type "exit" or Ctrl+C to quit.
+Connected to ~/.local/share/mesa/mnt/your-org. Type "exit" or Ctrl+C to quit.
 
 $ ls
 repo-one  repo-two  repo-three
@@ -37,7 +37,7 @@ Bye!
 
 1. Creates a disposable Sprite via the Sprites SDK
 2. Installs Mesa CLI and FUSE inside the sprite
-3. Starts the FUSE daemon (`mesa mount --daemonize`) with your org credentials
+3. Starts the FUSE daemon (`mesa mount --daemonize`) with your org and a short-lived access token
 4. Drops you into a REPL rooted at the mounted org directory
 
 ## Environment variables
@@ -45,11 +45,11 @@ Bye!
 | Variable | Description |
 |----------|-------------|
 | `MESA_ORG` | Your Mesa organization slug |
-| `MESA_API_KEY` | Mesa API key with at least `write` scope ([get one here](https://mesa.dev)) — the short-lived token minted for the sandbox cannot exceed the key's scopes |
+| `MESA_PRIVATE_KEY` | Mesa signing private key stored only in the trusted host process |
 | `SPRITES_TOKEN` | Sprites token ([get one here](https://sprites.dev)) |
 
 ## Requirements
 
 - Node.js >= 18
-- Mesa account with an API key
+- Mesa account with a signing key
 - Sprites account with a token

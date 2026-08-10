@@ -3,7 +3,7 @@
 # To run this example, create a .env file in this directory with:
 #   MESA_ORG=your-org
 #   MESA_REPO=your-repo
-#   MESA_API_KEY=your-mesa-key
+#   MESA_PRIVATE_KEY=your-signing-private-key
 #
 # Then run:
 #   uv run main.py
@@ -31,14 +31,15 @@ async def main() -> None:
 
     org = required_env("MESA_ORG")
     repo = required_env("MESA_REPO")
-    api_key = required_env("MESA_API_KEY")
+    private_key = required_env("MESA_PRIVATE_KEY")
 
-    async with Mesa(api_key=api_key, org=org) as mesa:
+    async with Mesa(private_key=private_key) as mesa:
         # The Mesa SDK's fs.mount() creates a virtual filesystem backed by
         # Mesa's cloud storage, with no clone or sandbox required.
         print(f"Connecting to {org}/{repo} via Mesa...")
         async with mesa.fs.mount(
-            repos=[RepoConfig(repo, at={"bookmark": "main"})],
+            authors=[{"name": "App Agent", "email": "agent@example.com"}],
+            repos=[RepoConfig(repo, bookmark="main")],
         ) as mesa_fs:
             new_change_id: str = await mesa_fs.changes.new(repo, bookmark="main")
 

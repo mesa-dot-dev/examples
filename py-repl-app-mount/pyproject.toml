@@ -5,7 +5,7 @@ description = "Interactive bash REPL over a Mesa cloud repo using the Python SDK
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "mesa-sdk>=0.36.0",
+    "mesa-sdk>=0.44.0",
     "python-dotenv>=1.2.2",
 ]
 

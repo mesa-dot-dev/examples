@@ -3,7 +3,7 @@
 // To run this example, create a .env file in this directory with:
 //   MESA_ORG=your-org
 //   MESA_REPO=your-repo
-//   MESA_API_KEY=your-mesa-key
+//   MESA_PRIVATE_KEY=your-signing-private-key
 //   ANTHROPIC_API_KEY=your-anthropic-key
 //
 // Then run:
@@ -16,8 +16,8 @@ import { createAgent, tool } from 'langchain';
 import { z } from 'zod';
 import { langchainRepl } from './repl.ts';
 
-if (!process.env.MESA_API_KEY) {
-  throw Error('$MESA_API_KEY not set.');
+if (!process.env.MESA_PRIVATE_KEY) {
+  throw Error('$MESA_PRIVATE_KEY not set.');
 }
 const ORG =
   process.env.MESA_ORG ??
@@ -34,9 +34,10 @@ const REPO =
 // `mesaFs.bash()` returns a bash instance that executes commands against the virtual filesystem.
 console.log(`Connecting to ${ORG}/${REPO} via Mesa...`);
 
-const mesa = new Mesa();
+const mesa = new Mesa({ privateKey: process.env.MESA_PRIVATE_KEY });
 const mesaFs = await mesa.fs.mount({
-  repos: [{ name: REPO, at: { bookmark: 'main' } }],
+  authors: [{ name: 'App Agent', email: 'agent@example.com' }],
+  repos: [{ name: REPO, bookmark: 'main' }],
 });
 
 const bash = mesaFs.bash({ cwd: `/${ORG}/${REPO}` });

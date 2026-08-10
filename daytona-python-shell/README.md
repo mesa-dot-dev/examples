@@ -13,7 +13,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Create a .env in this directory (gitignored)
 cp .env.example .env
 
-# Now populate your .env file with the required API keys
+# Now populate your .env file with the required credentials
 
 # Run
 uv run main.py
@@ -42,9 +42,9 @@ Bye!
 ## How it works
 
 1. Creates a Daytona sandbox (default image)
-2. Installs the [Mesa CLI](https://docs.mesa.dev/content/virtual-filesystem/os-level) inside the sandbox
+2. Installs the [Mesa CLI](https://docs.mesa.dev/content/mesafs/posix-mount) inside the sandbox
 3. Configures FUSE (`user_allow_other`) so Mesa can serve the mount
-4. Mints a short-lived access token from your API key (outside the sandbox) and runs `mesa mount -d -y` with your org and that token to start the FUSE daemon — your long-lived API key never enters the sandbox
+4. Mints a short-lived access token from your signing private key (outside the sandbox) and runs `mesa mount -d` with your org and that token to start the FUSE daemon — your private key never enters the sandbox
 5. Drops you into a REPL where commands run inside the sandbox via `sandbox.process.exec()`
 
 The REPL (`repl.py`) tracks your working directory and handles `cd`, `~` expansion, and relative paths.
@@ -62,7 +62,7 @@ The REPL (`repl.py`) tracks your working directory and handles `cd`, `~` expansi
 | Variable | Description |
 |----------|-------------|
 | `MESA_ORG` | Your Mesa organization slug |
-| `MESA_API_KEY` | Mesa API key with at least `write` scope ([get one here](https://mesa.dev)) — the short-lived token minted for the sandbox cannot exceed the key's scopes |
+| `MESA_PRIVATE_KEY` | Mesa signing private key stored only in the trusted host process |
 | `DAYTONA_API_KEY` | Daytona API key ([get one here](https://app.daytona.io)) |
 
 ## Requirements
