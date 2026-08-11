@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 // To run this example, create a .env file in this directory with:
-//   MESA_ORG=your-org
 //   MESA_PRIVATE_KEY=your-signing-private-key
 //   DAYTONA_API_KEY=your-daytona-key
 //
@@ -9,73 +8,64 @@
 //   npm start
 
 import 'dotenv/config';
-import { Daytona } from '@daytona/sdk';
+import { Daytona, Image } from '@daytona/sdk';
 import { Mesa } from '@mesadev/sdk';
 import tinyDaytonaRepl from './repl.ts';
 
-const ORG =
-  process.env.MESA_ORG ??
-  (() => {
-    throw Error('$MESA_ORG not set.');
-  })();
-const MESA_PRIVATE_KEY =
+const privateKey =
   process.env.MESA_PRIVATE_KEY ??
   (() => {
     throw Error('$MESA_PRIVATE_KEY not set.');
   })();
-if (!process.env.DAYTONA_API_KEY) {
-  throw Error('$DAYTONA_API_KEY not set.');
-}
 
-// Mint a short-lived access token OUTSIDE the sandbox, where your private key lives.
-// Only this token is injected into the sandbox below — your signing private key
-// never crosses the boundary. Signing is local (no network round-trip) and the
-// token expires on its own, so a compromised sandbox leaks at most a
-// soon-to-expire, narrowly-scoped credential.
-const mesa = new Mesa({ privateKey: MESA_PRIVATE_KEY });
-const { token } = await mesa.tokens.create({
-  authors: [{ name: 'Sandbox Agent', email: 'agent@example.com' }],
-  scopes: ['read', 'write'],
-  // Optionally restrict the token to specific repos (full `org/repo` names):
-  //   repos: [`${ORG}/my-repo`],
-  ttl_seconds: 60 * 60, // 1 hour (max 4h). The mount lasts exactly this long.
-});
+// Install Mesa and configure FUSE when Daytona builds the image. New sandboxes
+// can then start without repeating this setup.
+const image = Image.base('ubuntu:24.04').runCommands(
+  'apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/*',
+  'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.44.1 --yes',
+  // Enable user_allow_other in FUSE config. This is required for non-root users
+  // to access the mounted filesystem.
+  "sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf"
+);
 
+const mesa = new Mesa({ privateKey });
 console.log('Creating Daytona sandbox...');
 
 const daytona = new Daytona();
-const sandbox = await daytona.create({
-  envVars: {
-    MESA_ORG: ORG,
-    MESA_ACCESS_TOKEN: token,
+const sandbox = await daytona.create(
+  {
+    image,
+    ephemeral: true,
+    ttlMinutes: 30, // 30 minutes
   },
-});
+  {
+    timeout: 10 * 60, // 10 minutes
+  }
+);
+
+let repo: { name: string; org: string } | undefined;
 
 try {
-  // Set up Mesa within the Daytona sandbox.
-  //
-  // We recommend installing Mesa as part of the container definition (ex. Docker image),
-  // but here we install it directly to keep the example small.
+  repo = await mesa.repos.create({ name: `daytona-${Date.now()}` });
 
-  // You can install Mesa as per the guide in https://docs.mesa.dev/content/mesafs/posix-mount.
-  //
-  // Mesa's installer will install all its dependencies through your system's package manager.
-  console.log('Installing Mesa...');
-  await sandbox.process.executeCommand('curl -fsSL https://mesa.dev/install.sh | sh');
-
-  // It is critical that you enable the user_allow_other flag in your fuse configuration.
-  //
-  // This allows users outside of yourself to also access the mesa mount you mounted. Mesa requires this for
-  // operation. See https://www.man7.org/linux/man-pages/man8/mount.fuse3.8.html for more details.
-  console.log('Configuring FUSE...');
-  await sandbox.process.executeCommand("sudo sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf");
+  // Mint a short-lived access token OUTSIDE the sandbox, where your private key lives.
+  // Only this token is injected into the sandbox below — your signing private key
+  // never crosses the boundary. Signing is local (no network round-trip) and the
+  // token expires on its own, so a compromised sandbox leaks at most a
+  // soon-to-expire, narrowly-scoped credential.
+  const { token } = await mesa.tokens.create({
+    authors: [{ name: 'Sandbox Agent', email: 'agent@example.com' }],
+    scopes: ['read', 'write'],
+    repos: [`${repo.org}/${repo.name}`],
+    ttl_seconds: 30 * 60, // 30 minutes
+  });
 
   // You can run mesa in daemon mode to kick it off in the background.
   //
   // The flag we are using here is:
   //   -d, --daemonize  Spawns mesa in the background.
   //
-  // We pass two environment variables when the sandbox is created above:
+  // We pass two environment variables:
   //   MESA_ORG           tells mesa which organization to mount.
   //   MESA_ACCESS_TOKEN  provides the credential for this process; here we pass
   //                      the short-lived token we minted above, so the private
@@ -83,15 +73,28 @@ try {
   //                      https://docs.mesa.dev/content/reference/mesa-cli-configuration.
   //
   // The token is read from the environment and is never persisted to disk.
+  // By default, MesaFS mounts every repo the token can access. This token can
+  // access only the temporary repo, so that is the only repo MesaFS mounts.
   console.log('Mounting Mesa...');
-  await sandbox.process.executeCommand('mesa mount -d');
+  const mount = await sandbox.process.executeCommand('mesa mount --daemonize', undefined, {
+    MESA_ORG: repo.org,
+    MESA_ACCESS_TOKEN: token,
+  });
+  if (mount.exitCode !== 0) throw new Error(mount.result);
 
-  // You can now explore repos in your org. We've written a tiny REPL here you can use to explore the sandbox.
+  // You can now explore the temporary repo. We've written a tiny REPL here you
+  // can use to explore the sandbox.
   //
-  // Your files will be in ~/.local/share/mesa/mnt/<org>/<repo>
-  await tinyDaytonaRepl(sandbox, { cwd: `~/.local/share/mesa/mnt/${ORG}` });
+  // Your files will be in ~/.local/share/mesa/mnt/<org>/<repo>.
+  const repoPath = `~/.local/share/mesa/mnt/${repo.org}/${repo.name}`;
+  await tinyDaytonaRepl(sandbox, { cwd: repoPath });
 } finally {
-  // No matter what happens, let's make sure we clean up the sandbox so we don't burn Daytona tokens!
-  console.log('\nCleaning up sandbox...');
-  await sandbox.delete();
+  // No matter what happens, let's make sure we clean up the temporary resources
+  // so we don't burn Daytona tokens!
+  console.log('\nCleaning up sandbox and temporary repo...');
+  try {
+    await sandbox.delete();
+  } finally {
+    if (repo) await mesa.repos.delete({ repo: repo.name });
+  }
 }

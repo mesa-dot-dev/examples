@@ -91,10 +91,12 @@ export default async function tinyDaytonaRepl(
 
   const shell = await ShellState.create(sandbox, options?.cwd ?? '~');
 
+  console.log(`Connected to ${options?.cwd ?? '~'}. Type "exit" or Ctrl+C to quit.\n`);
+
   while (true) {
     const input = await question(rl, '$ ');
 
-    if (input === null) {
+    if (input === null || input.trim() === 'exit') {
       break;
     }
 
@@ -113,4 +115,6 @@ export default async function tinyDaytonaRepl(
       console.error(`The process exited with a non-zero exit code: ${exitCode}`);
     }
   }
+
+  rl.close();
 }

@@ -58,6 +58,8 @@ def tiny_daytona_repl(sandbox: Sandbox, *, cwd: str | None = None) -> None:
     initial_cwd = _expand_tilde(cwd or "~", homedir)
     shell = ShellState(sandbox, homedir, initial_cwd)
 
+    print(f"Connected to {cwd or '~'}. Type 'exit' or Ctrl+D to quit.\n")
+
     while True:
         try:
             line = input("$ ")

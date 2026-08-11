@@ -1,8 +1,8 @@
 # daytona-shell
 
-Interactive shell over repos in a [Mesa](https://mesa.dev) org running inside a [Daytona](https://daytona.io) sandbox, written in TypeScript.
+Interactive shell over a temporary [Mesa](https://mesa.dev) repo running inside a [Daytona](https://daytona.io) sandbox, written in TypeScript.
 
-Spins up a Daytona sandbox, installs the Mesa CLI, mounts your org's repos via FUSE, and drops you into a minimal shell. Commands execute inside the sandbox against the mounted filesystem.
+Spins up a Daytona sandbox from an image with Mesa installed, creates and mounts a temporary repo via FUSE, and drops you into a minimal shell. Commands execute inside the sandbox against the mounted filesystem.
 
 See also: [daytona-python-shell](../daytona-python-shell) for the Python version.
 
@@ -22,32 +22,32 @@ npm start
 
 ```
 Creating Daytona sandbox...
-Mounting your-org...
-Connected to your-org. Type "exit" or Ctrl+C to quit.
+Mounting Mesa...
+Connected to ~/.local/share/mesa/mnt/acme/daytona-123456789. Type "exit" or Ctrl+C to quit.
 
-$ ls
-repo-one  repo-two  repo-three
-$ cd repo-one
-$ ls
-README.md  src/  package.json
+$ printf 'Hello from Daytona and Mesa!\n' > hello.txt
+$ cat hello.txt
+Hello from Daytona and Mesa!
 $ exit
-Cleaning up sandbox...
+Cleaning up sandbox and temporary repo...
 Bye!
 ```
 
 ## How it works
 
-1. Mints a scoped, short-lived access token from your signing private key outside the sandbox. The private key never enters the sandbox.
-2. Creates a Daytona sandbox with the access token injected directly into its environment.
-3. Installs the Mesa CLI and configures FUSE.
-4. Starts the FUSE daemon (`mesa mount --daemonize`).
-5. Waits for the mount to become ready, then drops you into a REPL
+1. Builds a Daytona image with Mesa and its FUSE configuration.
+2. Creates a temporary Mesa repo and a Daytona sandbox.
+3. Mints a 30-minute access token restricted to the temporary repo.
+4. Passes `MESA_ORG` and `MESA_ACCESS_TOKEN` only to the `mesa mount` command. The private key never enters the sandbox.
+5. Starts the FUSE daemon (`mesa mount --daemonize`), then drops you into a REPL in the mounted repo.
+6. Deletes the sandbox and temporary repo when the shell exits.
+
+By default, MesaFS mounts every repo the access token can access. Since this token is restricted to the temporary repo, that is the only repo in the mount.
 
 ## Environment variables
 
 | Variable | Description |
 |----------|-------------|
-| `MESA_ORG` | Your Mesa organization slug |
 | `MESA_PRIVATE_KEY` | Mesa signing private key stored only in the trusted host process |
 | `DAYTONA_API_KEY` | Daytona API key ([get one here](https://app.daytona.io)) |
 
