@@ -18,7 +18,7 @@ if (!process.env.MESA_PRIVATE_KEY) {
 }
 
 const mesa = new Mesa({ privateKey: process.env.MESA_PRIVATE_KEY });
-const org = await mesa.resolveOrg();
+const org = mesa.org.slug;
 const repo = `change-mgmt-example-${randomBytes(4).toString('hex')}`;
 
 console.log(`creating repo ${repo}...`);
