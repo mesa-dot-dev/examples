@@ -34,7 +34,7 @@ This project is written in TypeScript.
 
 ## How it works
 
-1. `Mesa` client initializes a virtual filesystem via `mesa.fs.mount()` (native Rust via NAPI)
+1. `Mesa` client initializes a virtual filesystem via `mesa.fs({ layout }).mount()` (native Rust via NAPI)
 2. `mesaFs.bash()` returns a bash instance backed by the virtual filesystem
 3. A `bash` tool is defined using the Vercel AI SDK's `tool()` function
 4. `streamText()` runs Claude in a tool loop, streaming reasoning, tool calls, and text to the terminal
@@ -43,7 +43,6 @@ This project is written in TypeScript.
 
 | Variable | Description |
 |----------|-------------|
-| `MESA_ORG` | Your Mesa organization slug |
 | `MESA_REPO` | The repository to mount |
 | `MESA_PRIVATE_KEY` | Mesa signing private key |
 | `ANTHROPIC_API_KEY` | Anthropic API key ([get one here](https://console.anthropic.com)) |

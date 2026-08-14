@@ -22,7 +22,7 @@ const privateKey =
 // can then start without repeating this setup.
 const image = Image.base('ubuntu:24.04').runCommands(
   'apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/*',
-  'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.44.1 --yes',
+  'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.46.0 --yes',
   // Enable user_allow_other in FUSE config. This is required for non-root users
   // to access the mounted filesystem.
   "sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf"
@@ -65,19 +65,10 @@ try {
   // The flag we are using here is:
   //   -d, --daemonize  Spawns mesa in the background.
   //
-  // We pass two environment variables:
-  //   MESA_ORG           tells mesa which organization to mount.
-  //   MESA_ACCESS_TOKEN  provides the credential for this process; here we pass
-  //                      the short-lived token we minted above, so the private
-  //                      key never enters the sandbox. See
-  //                      https://docs.mesa.dev/content/reference/mesa-cli-configuration.
-  //
-  // The token is read from the environment and is never persisted to disk.
   // By default, MesaFS mounts every repo the token can access. This token can
   // access only the temporary repo, so that is the only repo MesaFS mounts.
   console.log('Mounting Mesa...');
   const mount = await sandbox.process.executeCommand('mesa mount --daemonize', undefined, {
-    MESA_ORG: repo.org,
     MESA_ACCESS_TOKEN: token,
   });
   if (mount.exitCode !== 0) throw new Error(mount.result);

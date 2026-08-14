@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@daytona/sdk": "^0.200.1",
-    "@mesadev/sdk": "^0.44.0",
+    "@mesadev/sdk": "0.46.0",
     "dotenv": "^17.0.0"
   },
   "devDependencies": {

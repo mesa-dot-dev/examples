@@ -37,7 +37,7 @@ Bye!
 1. Builds a Daytona image with Mesa and its FUSE configuration.
 2. Creates a temporary Mesa repo and a Daytona sandbox.
 3. Mints a 30-minute access token restricted to the temporary repo.
-4. Passes `MESA_ORG` and `MESA_ACCESS_TOKEN` only to the `mesa mount` command. The private key never enters the sandbox.
+4. Passes `MESA_ACCESS_TOKEN` to the `mesa mount` command. The private key never enters the sandbox.
 5. Starts the FUSE daemon (`mesa mount --daemonize`), then drops you into a REPL in the mounted repo.
 6. Deletes the sandbox and temporary repo when the shell exits.
 

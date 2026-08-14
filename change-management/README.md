@@ -39,7 +39,7 @@ deleted.
 ## How it works
 
 1. Creates a temporary Mesa repo with a random name
-2. Mounts the repo's virtual filesystem in read-write mode via `mesa.fs.mount()`
+2. Mounts the repo's virtual filesystem in read-write mode via `mesa.fs({ layout }).mount()`
 3. For each change: creates a new change on "main", writes a file, creates a bookmark
 4. Each bookmark points to a different change with different file contents
 5. Cleans up the repo in a `finally` block

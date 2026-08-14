@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { parse } from 'node:url';
 import type { PtyHandle } from '@daytona/sdk';
 import next from 'next';
-import { WebSocket, WebSocketServer } from 'ws';
+import { WebSocket, WebSocketServer, type RawData } from 'ws';
 import { createSandboxPty, destroySandbox } from './lib/sandbox';
 
 const app = next({ dev: process.env.NODE_ENV !== 'production' });
@@ -10,13 +10,14 @@ const handle = app.getRequestHandler();
 
 function handleTerminalConnection(ws: WebSocket) {
   let pty: PtyHandle | null = null;
+  let ptyPromise: Promise<PtyHandle> | null = null;
   let cols = 120;
   let rows = 30;
   const decoder = new TextDecoder();
 
   const openPty = async () => {
     if (pty) return pty;
-    pty = await createSandboxPty({
+    ptyPromise ??= createSandboxPty({
       cols,
       rows,
       onData: (data) => {
@@ -24,31 +25,44 @@ function handleTerminalConnection(ws: WebSocket) {
           ws.send(decoder.decode(data, { stream: true }));
         }
       },
-    });
-    return pty;
+    })
+      .then((handle) => (pty = handle))
+      .finally(() => {
+        ptyPromise = null;
+      });
+    return ptyPromise;
   };
 
-  ws.on('message', async (data, isBinary) => {
+  const handleMessage = async (data: RawData, isBinary: boolean) => {
     if (isBinary) return;
 
     const text = data.toString();
     if (text.startsWith('resize:')) {
       [, cols, rows] = text.split(':').map(Number);
-      if (pty) {
-        await pty.resize(cols, rows);
-      } else {
-        await openPty();
-      }
+      const activePty = await openPty();
+      await activePty.resize(cols, rows);
       return;
     }
 
     const activePty = await openPty();
     await activePty.sendInput(text);
+  };
+
+  ws.on('message', (data, isBinary) => {
+    void handleMessage(data, isBinary).catch((error) => {
+      console.error('[terminal] Message failed:', error);
+      ws.close(1011, 'Terminal command failed');
+    });
   });
 
   ws.on('close', () => {
     decoder.decode();
-    void pty?.disconnect();
+    const activePty = pty ? Promise.resolve(pty) : ptyPromise;
+    void activePty
+      ?.then((handle) => handle.disconnect())
+      .catch((error) => {
+        console.error('[terminal] Disconnect failed:', error);
+      });
   });
 }
 
@@ -73,10 +87,19 @@ server.listen(3000, () => {
   console.log('> Ready on http://localhost:3000');
 });
 
-const shutdown = async () => {
-  console.log('\n[server] Shutting down...');
-  await destroySandbox();
-  process.exit(0);
+let shutdownPromise: Promise<void> | null = null;
+const shutdown = () => {
+  shutdownPromise ??= (async () => {
+    console.log('\n[server] Shutting down...');
+    try {
+      await destroySandbox();
+      process.exit(0);
+    } catch (error) {
+      console.error('[server] Shutdown failed:', error);
+      process.exit(1);
+    }
+  })();
+  return shutdownPromise;
 };
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+process.on('SIGINT', () => void shutdown());
+process.on('SIGTERM', () => void shutdown());

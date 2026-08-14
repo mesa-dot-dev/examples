@@ -5,7 +5,7 @@ description = "Interactive shell over a Mesa cloud repo running in a Daytona san
 requires-python = ">=3.11"
 dependencies = [
     "daytona>=0.183.0",
-    "mesa-sdk>=0.44.0",
+    "mesa-sdk==0.46.0",
     "python-dotenv>=1.2.2",
 ]
 

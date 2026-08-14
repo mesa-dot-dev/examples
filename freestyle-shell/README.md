@@ -37,14 +37,13 @@ Bye!
 
 1. Creates a Freestyle sandbox with a 1-hour timeout
 2. Installs Mesa CLI and FUSE inside the sandbox
-3. Starts the FUSE daemon (`mesa mount --daemonize`) with your org and a short-lived access token
+3. Starts the FUSE daemon (`mesa mount --daemonize`) with a short-lived access token
 4. Drops you into a REPL rooted at the mounted org directory
 
 ## Environment variables
 
 | Variable | Description |
 |----------|-------------|
-| `MESA_ORG` | Your Mesa organization slug |
 | `MESA_PRIVATE_KEY` | Mesa signing private key stored only in the trusted host process |
 | `FREESTYLE_API_KEY` | Freestyle API key ([get one here](https://freestyle.sh)) |
 

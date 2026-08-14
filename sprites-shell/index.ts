@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 // To run this example, create a .env file in this directory with:
-//   MESA_ORG=your-org
 //   MESA_PRIVATE_KEY=your-signing-private-key
 //   SPRITES_TOKEN=your-sprites-token
 //
@@ -13,11 +12,6 @@ import { SpritesClient } from '@fly/sprites';
 import { Mesa } from '@mesadev/sdk';
 import tinySpritesRepl from './repl.ts';
 
-const ORG =
-  process.env.MESA_ORG ??
-  (() => {
-    throw Error('$MESA_ORG not set.');
-  })();
 const MESA_PRIVATE_KEY =
   process.env.MESA_PRIVATE_KEY ??
   (() => {
@@ -35,17 +29,18 @@ const SPRITES_TOKEN =
 // token expires on its own, so a compromised sandbox leaks at most a
 // soon-to-expire, narrowly-scoped credential.
 const mesa = new Mesa({ privateKey: MESA_PRIVATE_KEY });
+const org = mesa.org.slug;
 const { token } = await mesa.tokens.create({
   authors: [{ name: 'Sandbox Agent', email: 'agent@example.com' }],
   scopes: ['read', 'write'],
   // Optionally restrict the token to specific repos (full `org/repo` names):
-  //   repos: [`${ORG}/my-repo`],
+  //   repos: [`${org}/my-repo`],
   ttl_seconds: 60 * 60, // 1 hour (max 4h). The mount lasts exactly this long.
 });
 
 console.log('creating sprite...');
 const client = new SpritesClient(SPRITES_TOKEN);
-const sprite = await client.createSprite(`mesa-${ORG}`);
+const sprite = await client.createSprite(`mesa-${org}`);
 
 try {
   // Set up Mesa within the Sprites sandbox.
@@ -54,7 +49,7 @@ try {
   //
   // Mesa's installer will install all its dependencies through your system's package manager.
   console.log('Installing Mesa...');
-  await sprite.execFile('sh', ['-c', 'curl -fsSL https://mesa.dev/install.sh | sh']);
+  await sprite.execFile('sh', ['-c', 'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.46.0']);
 
   // It is critical that you enable the user_allow_other flag in your fuse configuration.
   //
@@ -75,21 +70,13 @@ try {
   // The flag we are using here is:
   //   -d, --daemonize  Spawns mesa in the background.
   //
-  // We pass two environment variables:
-  //   MESA_ORG           tells mesa which organization to mount.
-  //   MESA_ACCESS_TOKEN  provides the credential for this process; here we pass
-  //                      the short-lived token we minted above, so the private
-  //                      key never enters the sandbox. See
-  //                      https://docs.mesa.dev/content/reference/mesa-cli-configuration.
-  //
-  // The token is read from the environment and is never persisted to disk.
   console.log(`mounting mesa...`);
-  await sprite.execFile('sh', ['-c', `MESA_ORG=${ORG} MESA_ACCESS_TOKEN=${token} mesa mount -d`]);
+  await sprite.execFile('sh', ['-c', `MESA_ACCESS_TOKEN=${token} mesa mount -d`]);
 
   // You can now explore repos in your org. We've written a tiny REPL here you can use to explore the sandbox.
   //
   // Your files will be at ~/.local/share/mesa/mnt/<org>/<repo>
-  await tinySpritesRepl(sprite, { cwd: `~/.local/share/mesa/mnt/${ORG}` });
+  await tinySpritesRepl(sprite, { cwd: `~/.local/share/mesa/mnt/${org}` });
 } finally {
   // No matter what happens, let's make sure we clean up the sprite!
   console.log('\nCleaning up sprite...');

@@ -38,7 +38,7 @@ Cleaning up sandbox...
 1. Mints a scoped, short-lived access token from your signing private key (signed locally; the private key never enters the sandbox)
 2. Creates a Superserve sandbox from the default `superserve/base` template
 3. Installs the [Mesa CLI](https://docs.mesa.dev/content/mesafs/posix-mount) inside the sandbox
-4. Runs `mesa mount -d` with your org and the short-lived token to start the FUSE daemon
+4. Runs `mesa mount -d` with the short-lived token to start the FUSE daemon
 5. Drops you into a REPL where commands run inside the sandbox via `sandbox.commands.run()`
 
 Superserve sandboxes are full Firecracker microVMs running as root with a FUSE-enabled kernel, so the `user_allow_other` and `chmod 666 /dev/fuse` steps that other sandbox providers require aren't needed.
@@ -56,7 +56,6 @@ The REPL (`repl.ts`) tracks your working directory and handles `cd`, `~` expansi
 
 | Variable | Description |
 |----------|-------------|
-| `MESA_ORG` | Your Mesa organization slug |
 | `MESA_PRIVATE_KEY` | Mesa signing private key stored only in the trusted host process |
 | `SUPERSERVE_API_KEY` | Superserve API key ([get one here](https://superserve.ai)) |
 

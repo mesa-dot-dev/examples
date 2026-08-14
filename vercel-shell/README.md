@@ -36,14 +36,13 @@ Bye!
 ## How it works
 
 1. Creates a Vercel sandbox
-2. Runs Mesa setup commands and starts the mount as a detached command
+2. Runs Mesa setup commands and starts the mount as a detached command with a short-lived access token
 3. Waits for the mount to become ready, then drops you into a REPL
 
 ## Environment variables
 
 | Variable | Description |
 |----------|-------------|
-| `MESA_ORG` | Your Mesa organization slug |
 | `MESA_PRIVATE_KEY` | Mesa signing private key stored only in the trusted host process |
 | `VERCEL_TEAM_ID` | Vercel team ID ([get one here](https://vercel.com/)) |
 | `VERCEL_PROJECT_ID` | Vercel project ID ([get one here](https://vercel.com/)) |

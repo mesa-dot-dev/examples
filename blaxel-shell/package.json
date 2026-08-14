@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@blaxel/core": "^0.2.0",
-    "@mesadev/sdk": "^0.44.0",
+    "@mesadev/sdk": "0.46.0",
     "dotenv": "^17.0.0"
   },
   "devDependencies": {

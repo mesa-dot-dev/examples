@@ -34,7 +34,7 @@ Bye!
 
 ## How it works
 
-1. `Mesa` client initializes a virtual filesystem via `mesa.fs.mount()` (native Rust via NAPI)
+1. `Mesa` client initializes a virtual filesystem via `mesa.fs({ layout }).mount()` (native Rust via NAPI)
 2. `mesaFs.bash()` returns a bash instance backed by the virtual filesystem
 3. Commands run against the virtual filesystem — reads hit Mesa's cloud storage, writes stay in the session
 
@@ -42,7 +42,6 @@ Bye!
 
 | Variable | Description |
 |----------|-------------|
-| `MESA_ORG` | Your Mesa organization slug |
 | `MESA_REPO` | The repository to mount |
 | `MESA_PRIVATE_KEY` | Mesa signing private key |
 

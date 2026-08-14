@@ -36,7 +36,6 @@ Open [http://localhost:3000](http://localhost:3000). The sandbox may take a bit 
 | Variable | Required | Description |
 |---|---|---|
 | `MESA_PRIVATE_KEY` | Yes | Mesa signing private key stored only in the trusted host process |
-| `MESA_ORG` | Yes | Mesa organization name |
 | `MESA_REPO` | Yes | Name of an existing repo in your org |
 | `DAYTONA_API_KEY` | Yes | Daytona API key for sandbox creation |
 | `ANTHROPIC_API_KEY` | Yes | Passed to Claude Code in the sandbox |
@@ -55,7 +54,7 @@ Browser                          Server                         Daytona Sandbox
 The sandbox terminal starts in:
 
 ```text
-/home/daytona/.local/share/mesa/mnt/$MESA_ORG/$MESA_REPO
+/home/daytona/.local/share/mesa/mnt/<org>/$MESA_REPO
 ```
 
 ## Requirements

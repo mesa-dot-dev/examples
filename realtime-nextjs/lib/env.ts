@@ -8,12 +8,6 @@ export const MESA_PRIVATE_KEY =
     throw Error('$MESA_PRIVATE_KEY not set.');
   })();
 
-export const MESA_ORG =
-  process.env.MESA_ORG ??
-  (() => {
-    throw Error('$MESA_ORG not set.');
-  })();
-
 export const MESA_REPO =
   process.env.MESA_REPO ??
   (() => {

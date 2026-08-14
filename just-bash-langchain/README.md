@@ -20,7 +20,7 @@ npm start
 
 ## How it works
 
-1. `Mesa` client initializes a virtual filesystem via `mesa.fs.mount()` (native Rust via NAPI)
+1. `Mesa` client initializes a virtual filesystem via `mesa.fs({ layout }).mount()` (native Rust via NAPI)
 2. `mesaFs.bash()` returns a bash instance backed by the virtual filesystem
 3. A `bash` tool is defined using LangChain's `tool()`
 4. `createAgent()` wires up the model + tools into a LangGraph runtime that handles the tool-calling loop
@@ -30,7 +30,6 @@ npm start
 
 | Variable | Description |
 |----------|-------------|
-| `MESA_ORG` | Your Mesa organization slug |
 | `MESA_REPO` | The repository to mount |
 | `MESA_PRIVATE_KEY` | Mesa signing private key |
 | `ANTHROPIC_API_KEY` | Anthropic API key ([get one here](https://console.anthropic.com)) |

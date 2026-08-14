@@ -1,16 +1,21 @@
 import { Buffer } from 'node:buffer';
-import { Daytona, type PtyHandle, type Sandbox } from '@daytona/sdk';
-import { Mesa } from '@mesadev/sdk';
-import { ANTHROPIC_API_KEY, MESA_ORG, MESA_REPO } from './env';
+import { Daytona, Image, type PtyHandle, type Sandbox } from '@daytona/sdk';
+import type { Mesa } from '@mesadev/sdk';
+import { ANTHROPIC_API_KEY, MESA_REPO } from './env';
 import type { SandboxStatus } from './events';
 
 const DAYTONA_HOME = '/home/daytona';
 const MOUNT_POINT = `${DAYTONA_HOME}/.local/share/mesa/mnt`;
-const REPO_PATH = `${MOUNT_POINT}/${MESA_ORG}/${MESA_REPO}`;
+const image = Image.base('daytonaio/sandbox:0.10.0').runCommands(
+  'curl --retry 5 --retry-all-errors -fsSL https://mesa.dev/install.sh -o /tmp/install-mesa.sh && sudo sh /tmp/install-mesa.sh --version 0.46.0 --yes && rm /tmp/install-mesa.sh',
+  'grep -qxF user_allow_other /etc/fuse.conf || echo user_allow_other | sudo tee -a /etc/fuse.conf >/dev/null',
+  'mesa --version && test -x /usr/bin/zsh && npm --version && claude --version'
+);
 
 interface SandboxState {
   sandbox: Sandbox | null;
   initPromise: Promise<void> | null;
+  repoPath: string | null;
 }
 
 declare global {
@@ -20,43 +25,60 @@ declare global {
 const state = (globalThis.__sandboxState ??= {
   sandbox: null,
   initPromise: null,
+  repoPath: null,
 });
 
 export function getSandboxStatus() {
   const status: SandboxStatus = state.sandbox ? 'ready' : state.initPromise ? 'creating' : 'idle';
   return {
     status,
-    repoPath: REPO_PATH,
+    repoPath: state.repoPath,
   };
 }
 
-export async function ensureSandbox(mesaPrivateKey: string): Promise<void> {
+async function executeCommand(sandbox: Sandbox, command: string, cwd?: string, timeout?: number): Promise<string> {
+  const response = await sandbox.process.executeCommand(command, cwd, undefined, timeout);
+  if (response.exitCode !== 0) {
+    throw new Error(`Sandbox command failed (${response.exitCode}): ${command}\n${response.result}`);
+  }
+  return response.result;
+}
+
+export async function ensureSandbox(mesa: Mesa, org: string): Promise<void> {
   if (state.sandbox) return;
   state.initPromise ??= (async () => {
-    // Mint a short-lived, repo-scoped access token on the trusted host. The
-    // signing private key never enters the sandbox.
-    const mesa = new Mesa({ privateKey: mesaPrivateKey });
-    const { token } = await mesa.tokens.create({
-      authors: [{ name: 'Realtime Agent', email: 'agent@example.com' }],
-      scopes: ['read', 'write'],
-      repos: [`${MESA_ORG}/${MESA_REPO}`],
-      ttl_seconds: 60 * 60,
-    });
-
-    console.log('[sandbox] Creating Daytona sandbox...');
-    const daytona = new Daytona();
-    const sandbox = await daytona.create({
-      name: `mesa-realtime-nextjs-${Date.now()}`,
-      envVars: {
-        ANTHROPIC_API_KEY,
-        MESA_ORG,
-        MESA_ACCESS_TOKEN: token,
-      },
-    });
-
+    let sandbox: Sandbox | null = null;
     try {
-      // Install and configure Claude Code
-      await sandbox.process.executeCommand(`npm install -g --prefix ${DAYTONA_HOME}/.local @anthropic-ai/claude-code`);
+      const repoPath = `${MOUNT_POINT}/${org}/${MESA_REPO}`;
+      // Mint a short-lived, repo-scoped access token on the trusted host. The
+      // signing private key never enters the sandbox.
+      const { token } = await mesa.tokens.create({
+        authors: [{ name: 'Realtime Agent', email: 'agent@example.com' }],
+        scopes: ['read', 'write'],
+        repos: [`${org}/${MESA_REPO}`],
+        ttl_seconds: 60 * 60,
+      });
+
+      console.log('[sandbox] Creating Daytona sandbox...');
+      const daytona = new Daytona();
+      sandbox = await daytona.create(
+        {
+          name: `mesa-realtime-nextjs-${Date.now()}`,
+          image,
+          ephemeral: true,
+          ttlMinutes: 30, // 30 minutes
+          envVars: {
+            ANTHROPIC_API_KEY,
+            MESA_ACCESS_TOKEN: token,
+          },
+        },
+        {
+          timeout: 10 * 60, // 10 minutes
+          onSnapshotCreateLogs: console.log,
+        }
+      );
+
+      // Configure Claude Code
       await sandbox.fs.createFolder(`${DAYTONA_HOME}/.claude`, '755');
       await sandbox.fs.uploadFile(
         Buffer.from(
@@ -64,7 +86,7 @@ export async function ensureSandbox(mesaPrivateKey: string): Promise<void> {
             {
               hasCompletedOnboarding: true,
               projects: {
-                [REPO_PATH]: {
+                [repoPath]: {
                   hasTrustDialogAccepted: true,
                   hasCompletedProjectOnboarding: true,
                   projectOnboardingSeenCount: 1,
@@ -78,21 +100,30 @@ export async function ensureSandbox(mesaPrivateKey: string): Promise<void> {
         `${DAYTONA_HOME}/.claude.json`
       );
 
-      // Install Mesa CLI and enable FUSE
-      await sandbox.process.executeCommand('curl -fsSL https://mesa.dev/install.sh | sh');
-      await sandbox.process.executeCommand("sudo sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf");
-
-      // Mount in the background. The CLI reads MESA_ORG and MESA_ACCESS_TOKEN
-      // from the environment, both injected when the sandbox was created.
-      await sandbox.process.executeCommand('mesa mount -d');
-      await sandbox.process.executeCommand('mesa edit main', REPO_PATH);
+      await executeCommand(sandbox, 'mesa mount --daemonize');
+      await executeCommand(
+        sandbox,
+        `for attempt in $(seq 1 60); do if test -d ${JSON.stringify(repoPath)} && test -r ${JSON.stringify(repoPath)} && test -w ${JSON.stringify(repoPath)}; then exit 0; fi; sleep 1; done; echo 'Mesa repo did not become ready: ${repoPath}' >&2; exit 1`,
+        undefined,
+        90 // 90 seconds
+      );
+      await executeCommand(sandbox, 'mesa edit main', repoPath);
 
       state.sandbox = sandbox;
-      console.log(`[sandbox] Ready. Repo: ${REPO_PATH}`);
+      state.repoPath = repoPath;
+      console.log(`[sandbox] Ready. Repo: ${repoPath}`);
     } catch (err) {
-      await sandbox.delete();
-      state.initPromise = null;
+      if (sandbox) {
+        try {
+          await sandbox.delete();
+        } catch (cleanupError) {
+          console.error('[sandbox] Cleanup failed after setup error:', cleanupError);
+        }
+      }
       throw err;
+    } finally {
+      state.initPromise = null;
+      if (!state.sandbox) state.repoPath = null;
     }
   })();
   await state.initPromise;
@@ -103,11 +134,11 @@ export async function createSandboxPty(options: {
   rows?: number;
   onData: (data: Uint8Array) => void | Promise<void>;
 }): Promise<PtyHandle> {
-  if (!state.sandbox) throw new Error('Sandbox not ready');
+  if (!state.sandbox || !state.repoPath) throw new Error('Sandbox not ready');
 
   const pty = await state.sandbox.process.createPty({
     id: crypto.randomUUID(),
-    cwd: REPO_PATH,
+    cwd: state.repoPath,
     cols: options.cols,
     rows: options.rows,
     envs: {
@@ -121,10 +152,12 @@ export async function createSandboxPty(options: {
 }
 
 export async function destroySandbox(): Promise<void> {
-  if (state.sandbox) {
-    console.log('[sandbox] Destroying...');
-    await state.sandbox.delete();
-    state.sandbox = null;
-    state.initPromise = null;
-  }
+  const sandbox = state.sandbox;
+  if (!sandbox) return;
+
+  state.sandbox = null;
+  state.initPromise = null;
+  state.repoPath = null;
+  console.log('[sandbox] Destroying...');
+  await sandbox.delete();
 }

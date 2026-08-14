@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 // To run this example, create a .env file in this directory with:
-//   MESA_ORG=your-org
 //   MESA_REPO=your-repo
 //   MESA_PRIVATE_KEY=your-signing-private-key
 //   ANTHROPIC_API_KEY=your-anthropic-key
@@ -11,7 +10,7 @@
 
 import 'dotenv/config';
 import { anthropic } from '@ai-sdk/anthropic';
-import { Mesa } from '@mesadev/sdk';
+import { Mesa, repo } from '@mesadev/sdk';
 import { type ModelMessage, stepCountIs, streamText, tool } from 'ai';
 import { z } from 'zod';
 import { aiSdkRepl } from './repl.ts';
@@ -19,34 +18,32 @@ import { aiSdkRepl } from './repl.ts';
 if (!process.env.MESA_PRIVATE_KEY) {
   throw Error('$MESA_PRIVATE_KEY not set.');
 }
-const ORG =
-  process.env.MESA_ORG ??
-  (() => {
-    throw Error('$MESA_ORG not set.');
-  })();
 const REPO =
   process.env.MESA_REPO ??
   (() => {
     throw Error('$MESA_REPO not set.');
   })();
 
-// The Mesa SDK's `fs.mount()` creates a virtual filesystem backed by Mesa's cloud storage.
+// The Mesa SDK's layout mount creates a virtual filesystem backed by Mesa's cloud storage.
 // `mesaFs.bash()` returns a bash instance that executes commands against the virtual filesystem.
-console.log(`Connecting to ${ORG}/${REPO} via Mesa...`);
 const mesa = new Mesa({ privateKey: process.env.MESA_PRIVATE_KEY });
-const mesaFs = await mesa.fs.mount({
-  authors: [{ name: 'App Agent', email: 'agent@example.com' }],
-  repos: [{ name: REPO, bookmark: 'main' }],
-});
+const org = mesa.org.slug;
+console.log(`Connecting to ${org}/${REPO} via Mesa...`);
+const mesaFs = await mesa
+  .fs({
+    layout: { [`/${org}/${REPO}`]: repo(REPO, { mode: 'rw', at: { bookmark: 'main' } }) },
+    authors: [{ name: 'App Agent', email: 'agent@example.com' }],
+  })
+  .mount();
 
-const bash = mesaFs.bash({ cwd: `/${ORG}/${REPO}` });
+const bash = mesaFs.bash({ cwd: `/${org}/${REPO}` });
 
 // Define a bash tool that the AI agent can call to run commands against the repo.
 // The Vercel AI SDK's `tool()` function wraps the bash execution with a typed schema.
 const bashTool = tool({
   description: [
     'Execute a bash command against the repository filesystem.',
-    `You have bash access to the "${REPO}" repository owned by "${ORG}".`,
+    `You have bash access to the "${REPO}" repository owned by "${org}".`,
     'Use standard unix commands (ls, cat, grep, find, head, etc.) to explore.',
   ].join('\n'),
   inputSchema: z.object({ command: z.string().describe('The bash command to execute') }),
@@ -66,7 +63,7 @@ const send = (messages: ModelMessage[]) => {
   });
 };
 
-console.log(`Connected. You can now chat with the agent about ${ORG}/${REPO}.`);
+console.log(`Connected. You can now chat with the agent about ${org}/${REPO}.`);
 console.log('Type "exit" or Ctrl+C to quit.\n');
 
 await aiSdkRepl(send);
