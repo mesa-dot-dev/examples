@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { Daytona, Image, type PtyHandle, type Sandbox } from '@daytona/sdk';
-import type { Mesa } from '@mesadev/sdk';
+import { type Mesa, repo } from '@mesadev/sdk';
 import { ANTHROPIC_API_KEY, MESA_REPO } from './env';
 import type { SandboxStatus } from './events';
 
@@ -44,20 +44,23 @@ async function executeCommand(sandbox: Sandbox, command: string, cwd?: string, t
   return response.result;
 }
 
-export async function ensureSandbox(mesa: Mesa, org: string): Promise<void> {
+export async function ensureSandbox(mesa: Mesa): Promise<void> {
   if (state.sandbox) return;
   state.initPromise ??= (async () => {
     let sandbox: Sandbox | null = null;
     try {
-      const repoPath = `${MOUNT_POINT}/${org}/${MESA_REPO}`;
-      // Mint a short-lived, repo-scoped access token on the trusted host. The
-      // signing private key never enters the sandbox.
-      const { token } = await mesa.tokens.create({
+      // A layout mount presents exactly its declared paths, so the repo lives
+      // at the layout path rather than under the org browse tree.
+      const repoPath = `${MOUNT_POINT}/workspace`;
+      // The layout is both what the mount presents and what the token is scoped
+      // to. Minting happens on the trusted host; the signing private key never
+      // enters the sandbox.
+      const workspace = mesa.fs({
+        layout: { '/workspace': repo(MESA_REPO, { mode: 'rw' }) },
         authors: [{ name: 'Realtime Agent', email: 'agent@example.com' }],
-        scopes: ['read', 'write'],
-        repos: [`${org}/${MESA_REPO}`],
-        ttl_seconds: 60 * 60,
+        ttl: 60 * 60,
       });
+      const { token } = await workspace.token();
 
       console.log('[sandbox] Creating Daytona sandbox...');
       const daytona = new Daytona();
@@ -100,7 +103,8 @@ export async function ensureSandbox(mesa: Mesa, org: string): Promise<void> {
         `${DAYTONA_HOME}/.claude.json`
       );
 
-      await executeCommand(sandbox, 'mesa mount --daemonize');
+      await executeCommand(sandbox, `cat > /tmp/layout.json <<'MESA_LAYOUT'\n${workspace.layout()}\nMESA_LAYOUT`);
+      await executeCommand(sandbox, 'mesa mount --daemonize --layout /tmp/layout.json');
       await executeCommand(
         sandbox,
         `for attempt in $(seq 1 60); do if test -d ${JSON.stringify(repoPath)} && test -r ${JSON.stringify(repoPath)} && test -w ${JSON.stringify(repoPath)}; then exit 0; fi; sleep 1; done; echo 'Mesa repo did not become ready: ${repoPath}' >&2; exit 1`,

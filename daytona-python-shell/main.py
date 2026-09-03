@@ -13,7 +13,7 @@ import time
 
 from daytona import CreateSandboxFromImageParams, Daytona, Image
 from dotenv import load_dotenv
-from mesa_sdk import Mesa
+from mesa_sdk import Mesa, repo
 from repl import tiny_daytona_repl
 
 load_dotenv()
@@ -47,35 +47,43 @@ async def main() -> None:
             ),
             timeout=10 * 60,  # 10 minutes
         )
-        repo = None
+        created = None
 
         try:
-            repo = await mesa.repos.create(name=f"daytona-{int(time.time() * 1000)}")
+            created = await mesa.repos.create(name=f"daytona-{int(time.time() * 1000)}")
 
-            # Mint a short-lived access token OUTSIDE the sandbox, where your
-            # private key lives. Only this token is injected into the sandbox below —
-            # your signing private key never crosses the boundary. Signing is
-            # local (no network round-trip) and the token expires on its own, so
-            # a compromised sandbox leaks at most a soon-to-expire,
-            # narrowly-scoped credential.
-            result = await mesa.tokens.create(
+            # Declare the namespace the sandbox gets: this layout is both what
+            # the mount presents and what the token is scoped to. Nothing
+            # outside it is reachable.
+            workspace = mesa.fs(
+                layout={"/workspace": repo(created.name, mode="rw")},
                 authors=[{"name": "Sandbox Agent", "email": "agent@example.com"}],
-                scopes=["read", "write"],
-                repos=[f"{repo.org}/{repo.name}"],
-                ttl_seconds=30 * 60,  # 30 minutes
+                ttl=30 * 60,  # 30 minutes
             )
+
+            # Mint the short-lived access token OUTSIDE the sandbox, where your
+            # private key lives. Only this token is injected into the sandbox
+            # below — your signing private key never crosses the boundary.
+            # Signing is local (no network round-trip) and the token expires on
+            # its own, so a compromised sandbox leaks at most a soon-to-expire
+            # credential scoped to the layout's repositories.
+            result = await workspace.token()
 
             # You can run mesa in daemon mode to kick it off in the background.
             #
             # The flag we are using here is:
             #   -d, --daemonize  Spawns mesa in the background.
             #
-            # By default, MesaFS mounts every repo the token can access. This token
-            # can access only the temporary repo, so that is the only repo MesaFS
-            # mounts.
+            # The same layout the token was scoped to also describes the mount,
+            # so write it into the sandbox and point `mesa mount` at it.
             print("Mounting Mesa...")
+            write_layout = sandbox.process.exec(
+                f"cat > /tmp/layout.json <<'MESA_LAYOUT'\n{workspace.layout()}\nMESA_LAYOUT",
+            )
+            if write_layout.exit_code != 0:
+                raise RuntimeError(write_layout.result)
             mount = sandbox.process.exec(
-                "mesa mount --daemonize",
+                "mesa mount --daemonize --layout /tmp/layout.json",
                 env={"MESA_ACCESS_TOKEN": result.token},
             )
             if mount.exit_code != 0:
@@ -84,9 +92,10 @@ async def main() -> None:
             # You can now explore the temporary repo. We've written a tiny REPL here
             # you can use to explore the sandbox.
             #
-            # Your files will be in ~/.local/share/mesa/mnt/<org>/<repo>.
-            repo_path = f"~/.local/share/mesa/mnt/{repo.org}/{repo.name}"
-            tiny_daytona_repl(sandbox, cwd=repo_path)
+            # A layout mount presents exactly its declared paths, so the repo
+            # is at ~/.local/share/mesa/mnt/workspace — the org browse tree is
+            # not present.
+            tiny_daytona_repl(sandbox, cwd="~/.local/share/mesa/mnt/workspace")
         finally:
             # No matter what happens, let's make sure we clean up the temporary
             # resources so we don't burn Daytona tokens!
@@ -94,8 +103,8 @@ async def main() -> None:
             try:
                 sandbox.delete()
             finally:
-                if repo is not None:
-                    await mesa.repos.delete(repo=repo.name)
+                if created is not None:
+                    await mesa.repos.delete(repo=created.name)
             print("Bye!")
 
 

@@ -48,7 +48,7 @@ export async function ensureDemoSession(): Promise<void> {
         }
       });
 
-      await ensureSandbox(mesa, org);
+      await ensureSandbox(mesa);
       store.fs = fs;
       store.subscription = subscription;
       store.demoFilePath = `/${org}/${MESA_REPO}/${DEMO_FILE}`;
