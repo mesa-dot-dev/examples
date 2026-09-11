@@ -7,7 +7,7 @@ import type { SandboxStatus } from './events';
 const DAYTONA_HOME = '/home/daytona';
 const MOUNT_POINT = `${DAYTONA_HOME}/.local/share/mesa/mnt`;
 const image = Image.base('daytonaio/sandbox:0.10.0').runCommands(
-  'curl --retry 5 --retry-all-errors -fsSL https://mesa.dev/install.sh -o /tmp/install-mesa.sh && sudo sh /tmp/install-mesa.sh --version 0.46.0 --yes && rm /tmp/install-mesa.sh',
+  'curl --retry 5 --retry-all-errors -fsSL https://mesa.dev/install.sh -o /tmp/install-mesa.sh && sudo sh /tmp/install-mesa.sh --version 0.47.3 --yes && rm /tmp/install-mesa.sh',
   'grep -qxF user_allow_other /etc/fuse.conf || echo user_allow_other | sudo tee -a /etc/fuse.conf >/dev/null',
   'mesa --version && test -x /usr/bin/zsh && npm --version && claude --version'
 );

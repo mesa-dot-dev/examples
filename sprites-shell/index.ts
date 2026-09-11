@@ -35,7 +35,7 @@ const MESA_REPO =
 const mesa = new Mesa({ privateKey: MESA_PRIVATE_KEY });
 const org = mesa.org.slug;
 const workspace = mesa.fs({
-  layout: { '/workspace': repo(MESA_REPO, { mode: 'rw' }) },
+  layout: { '/workspace': repo(MESA_REPO, { mode: 'rw', at: { bookmark: 'main' } }) },
   authors: [{ name: 'Sandbox Agent', email: 'agent@example.com' }],
   ttl: 60 * 60, // 1 hour (max 4h). The mount lasts exactly this long.
 });
@@ -58,7 +58,7 @@ try {
   //
   // Mesa's installer will install all its dependencies through your system's package manager.
   console.log('Installing Mesa...');
-  await sprite.execFile('sh', ['-c', 'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.46.0']);
+  await sprite.execFile('sh', ['-c', 'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3']);
 
   // It is critical that you enable the user_allow_other flag in your fuse configuration.
   //

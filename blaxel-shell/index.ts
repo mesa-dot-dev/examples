@@ -30,7 +30,7 @@ const MESA_REPO =
 // presents and what the token is scoped to. Nothing outside it is reachable.
 const mesa = new Mesa({ privateKey: MESA_PRIVATE_KEY });
 const workspace = mesa.fs({
-  layout: { '/workspace': repo(MESA_REPO, { mode: 'rw' }) },
+  layout: { '/workspace': repo(MESA_REPO, { mode: 'rw', at: { bookmark: 'main' } }) },
   authors: [{ name: 'Sandbox Agent', email: 'agent@example.com' }],
   ttl: 60 * 60, // 1 hour (max 4h). The mount lasts exactly this long.
 });
@@ -53,7 +53,7 @@ try {
   // gcompat (not libc6-compat) is required because the Mesa daemon's gRPC connections deadlock under libc6-compat's musl shim.
   await sandbox.process.exec({
     command:
-      'apk add --no-cache curl ca-certificates gcompat fuse3 && curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.46.0 --yes',
+      'apk add --no-cache curl ca-certificates gcompat fuse3 && curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3 --yes',
     waitForCompletion: true,
   });
 

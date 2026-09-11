@@ -1,8 +1,8 @@
 # daytona-shell
 
-Interactive shell over a temporary [Mesa](https://mesa.dev) repo running inside a [Daytona](https://daytona.io) sandbox, written in TypeScript.
+Interactive shell over a [Mesa](https://mesa.dev) repo running inside a [Daytona](https://daytona.io) sandbox, written in TypeScript.
 
-Spins up a Daytona sandbox from an image with Mesa installed, creates and mounts a temporary repo via FUSE, and drops you into a minimal shell. Commands execute inside the sandbox against the mounted filesystem.
+Spins up a Daytona sandbox from an image with Mesa installed, mounts a repo via FUSE, and drops you into a minimal shell. Commands execute inside the sandbox against the mounted filesystem.
 
 See also: [daytona-python-shell](../daytona-python-shell) for the Python version.
 
@@ -29,15 +29,15 @@ $ printf 'Hello from Daytona and Mesa!\n' > hello.txt
 $ cat hello.txt
 Hello from Daytona and Mesa!
 $ exit
-Cleaning up sandbox and temporary repo...
+Cleaning up sandbox...
 Bye!
 ```
 
 ## How it works
 
 1. Builds a Daytona image with Mesa and its FUSE configuration.
-2. Creates a temporary Mesa repo and a Daytona sandbox.
-3. Mints a 30-minute access token restricted to the temporary repo.
+2. Creates a temporary Daytona sandbox.
+3. Mints a 30-minute access token restricted to the repo.
 4. Passes `MESA_ACCESS_TOKEN` to the `mesa mount` command. The private key never enters the sandbox.
 5. Starts the FUSE daemon (`mesa mount --daemonize`), then drops you into a REPL in the mounted repo.
 6. Deletes the sandbox and temporary repo when the shell exits.
@@ -48,6 +48,7 @@ By default, MesaFS mounts every repo the access token can access. Since this tok
 
 | Variable | Description |
 |----------|-------------|
+| `MESA_REPO` | The repository to mount |
 | `MESA_PRIVATE_KEY` | Mesa private key stored only in the trusted host process |
 | `DAYTONA_API_KEY` | Daytona API key ([get one here](https://app.daytona.io)) |
 

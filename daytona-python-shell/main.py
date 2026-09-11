@@ -28,7 +28,7 @@ if not MESA_PRIVATE_KEY:
 image = Image.base("ubuntu:24.04").run_commands(
     "apt-get update && apt-get install -y --no-install-recommends "
     "ca-certificates curl && rm -rf /var/lib/apt/lists/*",
-    "curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.46.0 --yes",
+    "curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3 --yes",
     # Enable user_allow_other in FUSE config. This is required for non-root users
     # to access the mounted filesystem.
     "sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf",
@@ -56,7 +56,7 @@ async def main() -> None:
             # the mount presents and what the token is scoped to. Nothing
             # outside it is reachable.
             workspace = mesa.fs(
-                layout={"/workspace": repo(created.name, mode="rw")},
+                layout={"/workspace": repo(created.name, mode="rw", at={"bookmark": "main"})},
                 authors=[{"name": "Sandbox Agent", "email": "agent@example.com"}],
                 ttl=30 * 60,  # 30 minutes
             )

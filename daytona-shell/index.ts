@@ -17,18 +17,39 @@ const privateKey =
   (() => {
     throw Error('$MESA_PRIVATE_KEY not set.');
   })();
+const repoName =
+  process.env.MESA_REPO ??
+  (() => {
+    throw Error('$MESA_REPO not set.');
+  })();
 
 // Install Mesa and configure FUSE when Daytona builds the image. New sandboxes
 // can then start without repeating this setup.
 const image = Image.base('ubuntu:24.04').runCommands(
   'apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/*',
-  'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.46.0 --yes',
+  'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3 --yes',
   // Enable user_allow_other in FUSE config. This is required for non-root users
   // to access the mounted filesystem.
   "sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf"
 );
 
 const mesa = new Mesa({ privateKey });
+
+// Declare the namespace the sandbox gets: this layout is both what the mount
+// presents and what the token is scoped to. Nothing outside it is reachable.
+const workspace = mesa.fs({
+  layout: { '/workspace': repo(repoName, { mode: 'rw', at: { bookmark: 'main' } }) },
+  authors: [{ name: 'Sandbox Agent', email: 'agent@example.com' }],
+  ttl: 30 * 60, // 30 minutes
+});
+
+// Mint the short-lived access token OUTSIDE the sandbox, where your private
+// key lives. Only this token is injected below — your private key
+// never crosses the boundary. Signing is local (no network round-trip) and
+// the token expires on its own, so a compromised sandbox leaks at most a
+// soon-to-expire access token scoped to the layout's repositories.
+const { token } = await workspace.token();
+
 console.log('Creating Daytona sandbox...');
 
 const daytona = new Daytona();
@@ -37,32 +58,16 @@ const sandbox = await daytona.create(
     image,
     ephemeral: true,
     ttlMinutes: 30, // 30 minutes
+    envVars: {
+      MESA_ACCESS_TOKEN: token,
+    },
   },
   {
     timeout: 10 * 60, // 10 minutes
   }
 );
 
-let created: { name: string; org: string } | undefined;
-
 try {
-  created = await mesa.repos.create({ name: `daytona-${Date.now()}` });
-
-  // Declare the namespace the sandbox gets: this layout is both what the mount
-  // presents and what the token is scoped to. Nothing outside it is reachable.
-  const workspace = mesa.fs({
-    layout: { '/workspace': repo(created.name, { mode: 'rw' }) },
-    authors: [{ name: 'Sandbox Agent', email: 'agent@example.com' }],
-    ttl: 30 * 60, // 30 minutes
-  });
-
-  // Mint the short-lived access token OUTSIDE the sandbox, where your private
-  // key lives. Only this token is injected below — your private key
-  // never crosses the boundary. Signing is local (no network round-trip) and
-  // the token expires on its own, so a compromised sandbox leaks at most a
-  // soon-to-expire access token scoped to the layout's repositories.
-  const { token } = await workspace.token();
-
   // You can run mesa in daemon mode to kick it off in the background.
   //
   // The flag we are using here is:
@@ -75,12 +80,10 @@ try {
     `cat > /tmp/layout.json <<'MESA_LAYOUT'\n${workspace.layout()}\nMESA_LAYOUT`
   );
   if (writeLayout.exitCode !== 0) throw new Error(writeLayout.result);
-  const mount = await sandbox.process.executeCommand('mesa mount --daemonize --layout /tmp/layout.json', undefined, {
-    MESA_ACCESS_TOKEN: token,
-  });
+  const mount = await sandbox.process.executeCommand('mesa mount --daemonize --layout /tmp/layout.json');
   if (mount.exitCode !== 0) throw new Error(mount.result);
 
-  // You can now explore the temporary repo. We've written a tiny REPL here you
+  // You can now explore the repo. We've written a tiny REPL here you
   // can use to explore the sandbox.
   //
   // A layout mount presents exactly its declared paths, so the repo is at
@@ -89,10 +92,6 @@ try {
 } finally {
   // No matter what happens, let's make sure we clean up the temporary resources
   // so we don't burn Daytona tokens!
-  console.log('\nCleaning up sandbox and temporary repo...');
-  try {
-    await sandbox.delete();
-  } finally {
-    if (created) await mesa.repos.delete({ repo: created.name });
-  }
+  console.log('\nCleaning up sandbox...');
+  await sandbox.delete();
 }

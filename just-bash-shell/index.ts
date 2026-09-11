@@ -21,24 +21,19 @@ const REPO =
   })();
 
 const mesa = new Mesa({ privateKey: process.env.MESA_PRIVATE_KEY });
-const org = mesa.org.slug;
 
 // The Mesa SDK's layout mount creates a virtual filesystem backed by Mesa's cloud storage.
 // You get a full bash interface — ls, cat, grep, find, etc. — against files in a Mesa repo,
 // no cloning, no sandbox required.
-console.log(`Connecting to ${org}/${REPO} via Mesa...`);
+console.log(`Connecting to ${REPO} via Mesa...`);
 const mesaFs = await mesa
   .fs({
-    layout: { [`/${org}/${REPO}`]: repo(REPO, { mode: 'rw', at: { bookmark: 'main' } }) },
+    layout: { '/workspace': repo(REPO, { mode: 'rw', at: { bookmark: 'main' } }) },
     authors: [{ name: 'App Agent', email: 'agent@example.com' }],
   })
   .mount();
 
-const newChange = await mesaFs.change.new({ repo: REPO, bookmark: 'main' });
-
 // `mesaFs.bash()` returns a bash instance that executes commands against the virtual filesystem.
-const bash = mesaFs.bash({ cwd: `/${org}/${REPO}`, python: true });
+const bash = mesaFs.bash({ cwd: '/workspace' });
 
-await tinyBashRepl(bash, async () => {
-  await mesaFs.bookmark.move({ repo: REPO, name: 'main', changeId: newChange.changeOid });
-});
+await tinyBashRepl(bash, () => {});

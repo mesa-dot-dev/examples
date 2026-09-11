@@ -33,7 +33,7 @@ if (!process.env.VERCEL_TEAM_ID || !process.env.VERCEL_PROJECT_ID || !process.en
 // presents and what the token is scoped to. Nothing outside it is reachable.
 const mesa = new Mesa({ privateKey: MESA_PRIVATE_KEY });
 const workspace = mesa.fs({
-  layout: { '/workspace': repo(MESA_REPO, { mode: 'rw' }) },
+  layout: { '/workspace': repo(MESA_REPO, { mode: 'rw', at: { bookmark: 'main' } }) },
   authors: [{ name: 'Sandbox Agent', email: 'agent@example.com' }],
   ttl: 60 * 60, // 1 hour (max 4h). The mount lasts exactly this long.
 });
@@ -62,7 +62,7 @@ try {
   console.log('Installing Mesa...');
   await sandbox.runCommand({
     cmd: 'sh',
-    args: ['-c', 'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.46.0'],
+    args: ['-c', 'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3'],
   });
 
   // It is critical that you enable the user_allow_other flag in your fuse configuration.

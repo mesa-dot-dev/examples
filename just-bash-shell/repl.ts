@@ -13,8 +13,12 @@ interface Bash {
 
 function question(rl: readline.Interface, prompt: string): Promise<string | null> {
   return new Promise((resolve) => {
-    rl.once('close', () => resolve(null));
-    rl.question(prompt, (answer) => resolve(answer));
+    const onClose = () => resolve(null);
+    rl.once('close', onClose);
+    rl.question(prompt, (answer) => {
+      rl.off('close', onClose);
+      resolve(answer);
+    });
   });
 }
 
