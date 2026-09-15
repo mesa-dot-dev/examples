@@ -59,7 +59,7 @@ try {
   //
   // Mesa's installer will install all its dependencies through your system's package manager.
   console.log('Installing Mesa...');
-  await vm.exec('curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3');
+  await vm.exec('curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.48.0');
 
   // It is critical that you enable the user_allow_other flag in your fuse configuration.
   //
@@ -82,7 +82,7 @@ try {
   console.log('Mounting layout...');
   // The same layout the token was scoped to also describes the mount, so write
   // it into the VM and point `mesa mount` at it.
-  await vm.exec(`cat > /tmp/layout.json <<'MESA_LAYOUT'\n${workspace.layout()}\nMESA_LAYOUT`);
+  await vm.exec(`cat > /tmp/layout.json <<'MESA_LAYOUT'\n${JSON.stringify(workspace.layout())}\nMESA_LAYOUT`);
   await vm.exec(`MESA_ACCESS_TOKEN=${token} mesa mount -d --layout /tmp/layout.json`);
 
   // You can now explore the layout. We've written a tiny REPL here you can use to explore the sandbox.

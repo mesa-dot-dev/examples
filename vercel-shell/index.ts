@@ -62,7 +62,7 @@ try {
   console.log('Installing Mesa...');
   await sandbox.runCommand({
     cmd: 'sh',
-    args: ['-c', 'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3'],
+    args: ['-c', 'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.48.0'],
   });
 
   // It is critical that you enable the user_allow_other flag in your fuse configuration.
@@ -88,7 +88,7 @@ try {
   console.log('Mounting Mesa...');
   await sandbox.runCommand({
     cmd: 'sh',
-    args: ['-c', `cat > /tmp/layout.json <<'MESA_LAYOUT'\n${workspace.layout()}\nMESA_LAYOUT`],
+    args: ['-c', `cat > /tmp/layout.json <<'MESA_LAYOUT'\n${JSON.stringify(workspace.layout())}\nMESA_LAYOUT`],
   });
   await sandbox.runCommand({
     cmd: 'mesa',

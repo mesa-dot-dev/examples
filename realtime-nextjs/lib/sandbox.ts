@@ -7,7 +7,7 @@ import type { SandboxStatus } from './events';
 const DAYTONA_HOME = '/home/daytona';
 const MOUNT_POINT = `${DAYTONA_HOME}/.local/share/mesa/mnt`;
 const image = Image.base('daytonaio/sandbox:0.10.0').runCommands(
-  'curl --retry 5 --retry-all-errors -fsSL https://mesa.dev/install.sh -o /tmp/install-mesa.sh && sudo sh /tmp/install-mesa.sh --version 0.47.3 --yes && rm /tmp/install-mesa.sh',
+  'curl --retry 5 --retry-all-errors -fsSL https://mesa.dev/install.sh -o /tmp/install-mesa.sh && sudo sh /tmp/install-mesa.sh --version 0.48.0 --yes && rm /tmp/install-mesa.sh',
   'grep -qxF user_allow_other /etc/fuse.conf || echo user_allow_other | sudo tee -a /etc/fuse.conf >/dev/null',
   'mesa --version && test -x /usr/bin/zsh && npm --version && claude --version'
 );
@@ -103,7 +103,10 @@ export async function ensureSandbox(mesa: Mesa): Promise<void> {
         `${DAYTONA_HOME}/.claude.json`
       );
 
-      await executeCommand(sandbox, `cat > /tmp/layout.json <<'MESA_LAYOUT'\n${workspace.layout()}\nMESA_LAYOUT`);
+      await executeCommand(
+        sandbox,
+        `cat > /tmp/layout.json <<'MESA_LAYOUT'\n${JSON.stringify(workspace.layout())}\nMESA_LAYOUT`
+      );
       await executeCommand(sandbox, 'mesa mount --daemonize --layout /tmp/layout.json');
       await executeCommand(
         sandbox,

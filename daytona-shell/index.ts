@@ -27,7 +27,7 @@ const repoName =
 // can then start without repeating this setup.
 const image = Image.base('ubuntu:24.04').runCommands(
   'apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/*',
-  'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3 --yes',
+  'curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.48.0 --yes',
   // Enable user_allow_other in FUSE config. This is required for non-root users
   // to access the mounted filesystem.
   "sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf"
@@ -77,9 +77,10 @@ try {
   // it into the sandbox and point `mesa mount` at it.
   console.log('Mounting Mesa...');
   const writeLayout = await sandbox.process.executeCommand(
-    `cat > /tmp/layout.json <<'MESA_LAYOUT'\n${workspace.layout()}\nMESA_LAYOUT`
+    `cat > /tmp/layout.json <<'MESA_LAYOUT'\n${JSON.stringify(workspace.layout())}\nMESA_LAYOUT`
   );
   if (writeLayout.exitCode !== 0) throw new Error(writeLayout.result);
+
   const mount = await sandbox.process.executeCommand('mesa mount --daemonize --layout /tmp/layout.json');
   if (mount.exitCode !== 0) throw new Error(mount.result);
 

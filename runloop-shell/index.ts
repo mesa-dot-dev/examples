@@ -56,7 +56,7 @@ try {
   //
   // Mesa's installer will install all its dependencies through your system's package manager.
   console.log('installing mesa...');
-  await devbox.cmd.exec('curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3');
+  await devbox.cmd.exec('curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.48.0');
 
   // It is critical that you enable the user_allow_other flag in your fuse configuration.
   //
@@ -79,7 +79,7 @@ try {
   console.log('mounting mesa...');
   // The same layout the token was scoped to also describes the mount, so write
   // it into the devbox and point `mesa mount` at it.
-  await devbox.cmd.exec(`cat > /tmp/layout.json <<'MESA_LAYOUT'\n${workspace.layout()}\nMESA_LAYOUT`);
+  await devbox.cmd.exec(`cat > /tmp/layout.json <<'MESA_LAYOUT'\n${JSON.stringify(workspace.layout())}\nMESA_LAYOUT`);
   await devbox.cmd.exec(`MESA_ACCESS_TOKEN=${token} mesa mount -d --layout /tmp/layout.json`);
 
   // You can now explore the layout. We've written a tiny REPL here you can use to explore the container.

@@ -57,7 +57,7 @@ try {
   //
   // Mesa's installer will install all its dependencies through your system's package manager.
   console.log('Installing Mesa...');
-  await sandbox.commands.run('curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3 --yes');
+  await sandbox.commands.run('curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.48.0 --yes');
 
   // Superserve sandboxes run as root inside a Firecracker microVM with a
   // FUSE-enabled kernel, so the `user_allow_other` and `chmod 666 /dev/fuse`
@@ -71,7 +71,9 @@ try {
   console.log('Mounting layout...');
   // The same layout the token was scoped to also describes the mount, so write
   // it into the sandbox and point `mesa mount` at it.
-  await sandbox.commands.run(`cat > /tmp/layout.json <<'MESA_LAYOUT'\n${workspace.layout()}\nMESA_LAYOUT`);
+  await sandbox.commands.run(
+    `cat > /tmp/layout.json <<'MESA_LAYOUT'\n${JSON.stringify(workspace.layout())}\nMESA_LAYOUT`
+  );
   await sandbox.commands.run('mesa mount -d --layout /tmp/layout.json', {
     env: {
       MESA_ACCESS_TOKEN: token,

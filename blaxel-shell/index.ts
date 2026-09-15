@@ -53,7 +53,7 @@ try {
   // gcompat (not libc6-compat) is required because the Mesa daemon's gRPC connections deadlock under libc6-compat's musl shim.
   await sandbox.process.exec({
     command:
-      'apk add --no-cache curl ca-certificates gcompat fuse3 && curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3 --yes',
+      'apk add --no-cache curl ca-certificates gcompat fuse3 && curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.48.0 --yes',
     waitForCompletion: true,
   });
 
@@ -61,7 +61,7 @@ try {
   // The same layout the token was scoped to also describes the mount, so write
   // it into the sandbox and point `mesa mount` at it.
   await sandbox.process.exec({
-    command: `cat > /tmp/layout.json <<'MESA_LAYOUT'\n${workspace.layout()}\nMESA_LAYOUT`,
+    command: `cat > /tmp/layout.json <<'MESA_LAYOUT'\n${JSON.stringify(workspace.layout())}\nMESA_LAYOUT`,
     waitForCompletion: true,
   });
   await sandbox.process.exec({

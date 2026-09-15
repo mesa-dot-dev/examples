@@ -8,6 +8,7 @@
 #   uv run main.py
 
 import asyncio
+import json
 import os
 import time
 
@@ -28,7 +29,7 @@ if not MESA_PRIVATE_KEY:
 image = Image.base("ubuntu:24.04").run_commands(
     "apt-get update && apt-get install -y --no-install-recommends "
     "ca-certificates curl && rm -rf /var/lib/apt/lists/*",
-    "curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.47.3 --yes",
+    "curl -fsSL https://mesa.dev/install.sh | sh -s -- --version 0.48.0 --yes",
     # Enable user_allow_other in FUSE config. This is required for non-root users
     # to access the mounted filesystem.
     "sed -i 's/^#user_allow_other/user_allow_other/' /etc/fuse.conf",
@@ -78,7 +79,7 @@ async def main() -> None:
             # so write it into the sandbox and point `mesa mount` at it.
             print("Mounting Mesa...")
             write_layout = sandbox.process.exec(
-                f"cat > /tmp/layout.json <<'MESA_LAYOUT'\n{workspace.layout()}\nMESA_LAYOUT",
+                f"cat > /tmp/layout.json <<'MESA_LAYOUT'\n{json.dumps(workspace.layout())}\nMESA_LAYOUT",
             )
             if write_layout.exit_code != 0:
                 raise RuntimeError(write_layout.result)

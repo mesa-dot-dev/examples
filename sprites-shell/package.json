@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@fly/sprites": "^0.0.1",
-    "@mesadev/sdk": "0.47.3",
+    "@mesadev/sdk": "0.48.0",
     "dotenv": "^17.0.0"
   },
   "devDependencies": {
